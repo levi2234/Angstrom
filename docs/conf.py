@@ -18,9 +18,9 @@ sys.path.insert(0, os.path.abspath("../src/"))
 
 # -- Project information -----------------------------------------------------
 
-project = "ai-python docs"
-copyright = "2022, Daniel Ciborowski"
-author = "Daniel Ciborowski"
+project = "Angstrom"
+copyright = "2024, Levi Thomas Jos van Es"
+author = "Levi Thomas Jos van Es"
 
 # The full version, including alpha/beta/rc tags
 release = "0.1.0"
@@ -39,6 +39,7 @@ extensions = [
     "sphinx.ext.viewcode",  # Add links to highlighted source code
     "sphinx.ext.napoleon",  # to render Google format docstrings
     "sphinx.ext.githubpages",
+    "sphinx_copybutton",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -65,3 +66,16 @@ html_static_path = ["_static"]
 # Napoleon settings
 napoleon_include_init_with_doc = True
 napoleon_include_private_with_doc = True
+
+# Theme options
+html_theme_options = {
+    'navigation_depth': 4,
+    'titles_only': False,
+    'collapse_navigation': False,
+}
+
+# The name of the Pygments (syntax highlighting) style to use.
+pygments_style = 'sphinx'
+
+# If true, `todo` and `todoList` produce output, else they produce nothing.
+todo_include_todos = False
