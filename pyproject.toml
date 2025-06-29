@@ -21,6 +21,13 @@ classifiers = [
 ]
 requires-python = ">=3.8.1"
 dynamic = ["version"]
+dependencies = [
+    "torch>=1.9.0",
+    "numpy>=1.21.0",
+    "opencv-python>=4.5.0",
+    "scipy>=1.7.0",
+    "tqdm>=4.62.0"
+]
 
 [project.optional-dependencies]
 spark = [
