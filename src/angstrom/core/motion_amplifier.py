@@ -112,7 +112,11 @@ class MotionAmplifier:
                     for frame_coeffs in self.pyramid_coeffs:
                         band_data = frame_coeffs[level_idx][band_idx]
                         # Convert to numpy and take real part for filtering
-                        band_np = band_data.cpu().numpy().real
+                        # Ensure we're on CPU for numpy operations
+                        if band_data.device.type != 'cpu':
+                            band_np = band_data.cpu().numpy().real
+                        else:
+                            band_np = band_data.numpy().real
                         temporal_sequence.append(band_np)
 
                     # Stack temporal sequence: [T, H, W]
@@ -123,7 +127,7 @@ class MotionAmplifier:
                         temporal_tensor, lowcut, highcut, self.video_fps, order
                     )
 
-                    # Convert back to complex tensor
+                    # Convert back to tensor on the correct device
                     filtered_complex = torch.from_numpy(filtered_temporal).to(self.device)
                     filtered_level.append(filtered_complex)
 
@@ -137,7 +141,15 @@ class MotionAmplifier:
 
     def amplify(self, amplification_factor=10, frequency_range=None):
         """
-        Amplify motion in the video using temporal bandpass filtering of phase coefficients.
+        Amplify motion in the video using proper motion phase extraction and amplification.
+
+        CORRECTED APPROACH:
+        1. Extract phase coefficients for all frames
+        2. Calculate motion phase (temporal differences)
+        3. Apply temporal filtering to motion phase
+        4. Amplify the filtered motion
+        5. Add amplified motion to base phase
+        6. Reconstruct frames
 
         Args:
             amplification_factor (float): Factor by which to amplify the motion
@@ -153,7 +165,7 @@ class MotionAmplifier:
         if self.video is None:
             raise ValueError("No video loaded. Cannot amplify.")
 
-        print("Amplifying motion using temporal bandpass filter on phase...")
+        print("Amplifying motion using proper motion phase extraction...")
 
         # Extract phase coefficients for all frames
         phase_coeffs_list = []
@@ -170,10 +182,11 @@ class MotionAmplifier:
         if frequency_range is not None:
             low_freq, high_freq = frequency_range
         else:
-            low_freq, high_freq = 0.0, 0.5 * fps
+            # Default to amplifying motion frequencies (0.1-2.0 Hz typical for human motion)
+            low_freq, high_freq = 0.1, 2.0
 
-        # Apply bandpass-based phase amplification
-        amplified_phase_coeffs_list = amplify_phase_bandpass(
+        # Apply corrected motion amplification
+        amplified_phase_coeffs_list = self._amplify_motion_phase(
             phase_coeffs_list,
             amplification_factor=amplification_factor,
             low_freq=low_freq,
@@ -186,7 +199,7 @@ class MotionAmplifier:
         reconstructed_frames = []
         target_size = (self.video.shape[2], self.video.shape[3])  # (height, width)
 
-        for i, (amplitude_coeffs, phase_coeffs) in enumerate(zip(amplitude_coeffs_list, amplified_phase_coeffs_list)):
+        for i, (amplitude_coeffs, phase_coeffs) in tqdm(enumerate(zip(amplitude_coeffs_list, amplified_phase_coeffs_list)), desc="Reconstructing frames"):
             # Reconstruct from amplitude and amplified phase
             recombined = reconstruct_from_amplitude_and_phase(amplitude_coeffs, phase_coeffs)
 
@@ -202,6 +215,83 @@ class MotionAmplifier:
         # Stack all frames into video tensor [N, C, H, W]
         amplified_video = torch.stack(reconstructed_frames, dim=0)
         return amplified_video
+
+    def _amplify_motion_phase(self, phase_coeffs_list, amplification_factor=10, low_freq=0.1, high_freq=2.0, fps=30.0):
+        """
+        Internal method to properly amplify motion phase.
+
+        Args:
+            phase_coeffs_list (list): List of phase coefficients for each frame
+            amplification_factor (float): Amplification factor
+            low_freq (float): Lower frequency bound (Hz)
+            high_freq (float): Upper frequency bound (Hz)
+            fps (float): Frames per second
+
+        Returns:
+            list: Amplified phase coefficients for each frame
+        """
+        num_frames = len(phase_coeffs_list)
+        if num_frames < 2:
+            return phase_coeffs_list
+
+        # Get structure from first frame
+        first_frame = phase_coeffs_list[0]
+        amplified_phase_coeffs_list = []
+
+        # For each level and band
+        for level_idx, level in enumerate(first_frame):
+            if isinstance(level, list):
+                # For each band
+                n_bands = len(level)
+                amplified_bands = []
+
+                for band_idx in range(n_bands):
+                    # Extract temporal sequence for this band: [T, H, W]
+                    temporal_sequence = []
+                    for frame_coeffs in phase_coeffs_list:
+                        band_data = frame_coeffs[level_idx][band_idx]
+                        if isinstance(band_data, torch.Tensor):
+                            temporal_sequence.append(band_data.cpu().numpy())
+                        else:
+                            temporal_sequence.append(np.zeros_like(band_data))
+
+                    # Stack into [T, H, W] array
+                    phase_band = np.stack(temporal_sequence, axis=0)
+
+                    # Extract motion phase (temporal differences)
+                    motion_phase = np.zeros_like(phase_band)
+                    for t in range(1, num_frames):
+                        # Calculate phase difference (motion)
+                        motion_phase[t] = phase_band[t] - phase_band[t-1]
+
+                    # Apply temporal bandpass filter to motion phase
+                    filtered_motion = butter_bandpass_filter(motion_phase, low_freq, high_freq, fps, order=2)
+
+                    # Amplify the filtered motion
+                    amplified_motion = filtered_motion * amplification_factor
+
+                    # Add amplified motion to original phase
+                    amplified_phase = phase_band + amplified_motion
+
+                    # Split back into frames
+                    for t in range(num_frames):
+                        if len(amplified_bands) <= t:
+                            amplified_bands.append([])
+                        amplified_bands[t].append(torch.from_numpy(amplified_phase[t]))
+
+                # Add to output
+                for t in range(num_frames):
+                    if len(amplified_phase_coeffs_list) <= t:
+                        amplified_phase_coeffs_list.append([])
+                    amplified_phase_coeffs_list[t].append(amplified_bands[t])
+            else:
+                # For lowpass/highpass, just copy
+                for t in range(num_frames):
+                    if len(amplified_phase_coeffs_list) <= t:
+                        amplified_phase_coeffs_list.append([])
+                    amplified_phase_coeffs_list[t].append(level)
+
+        return amplified_phase_coeffs_list
 
     def save_video(self, video_tensor, output_path):
         """
