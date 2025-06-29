@@ -3,24 +3,32 @@ requires = ["flit_core >=2,<4"]
 build-backend = "flit_core.buildapi"
 
 [project]
-name =  "angstrom"
+name = "angstrom"
 authors = [
     {name = "Levi Thomas Jos van Es", email = "levi2234@hotmail.com"},
 ]
-description = "Sample Python Project for creating a new Python Module"
+description = "Phase-based motion amplification using complex steerable pyramids"
 readme = "README.md"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11"
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Topic :: Scientific/Engineering :: Computer Vision",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Operating System :: OS Independent",
+    "Framework :: Pytest",
 ]
 requires-python = ">=3.8.1"
 dynamic = ["version"]
+keywords = ["motion-amplification", "computer-vision", "video-processing", "phase-amplification", "steerable-pyramids", "opencv", "pytorch"]
 dependencies = [
     "torch>=1.9.0",
     "numpy>=1.21.0",
@@ -30,10 +38,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-spark = [
-    "pyspark>=3.0.0"
-]
-test = [
+# Development and testing dependencies
+dev = [
     "bandit[toml]==1.7.5",
     "black==23.3.0",
     "check-manifest==0.49",
@@ -53,10 +59,37 @@ test = [
     "shellcheck-py==0.9.0.2"
 ]
 
+# Documentation dependencies
+docs = [
+    "sphinx>=4.0.0",
+    "sphinx-rtd-theme>=1.0.0",
+    "sphinx-copybutton>=0.5.0",
+    "sphinx-autodoc-typehints>=1.12.0"
+]
+
+# GPU acceleration (optional)
+gpu = [
+    "torch>=1.9.0+cu118; platform_system == 'Linux'",
+    "torch>=1.9.0+cu118; platform_system == 'Windows'",
+    "torch>=1.9.0; platform_system == 'Darwin'"
+]
+
+# All dependencies
+all = [
+    "angstrom[dev,docs,gpu]"
+]
+
 [project.urls]
-Documentation = "https://github.com/microsoft/python-package-template/tree/main#readme"
-Source = "https://github.com/microsoft/python-package-template"
-Tracker = "https://github.com/microsoft/python-package-template/issues"
+Homepage = "https://github.com/levi2234/Angstrom"
+Documentation = "https://levi2234.github.io/Angstrom/"
+Repository = "https://github.com/levi2234/Angstrom"
+"Bug Tracker" = "https://github.com/levi2234/Angstrom/issues"
+"Source Code" = "https://github.com/levi2234/Angstrom"
+"Download" = "https://pypi.org/project/angstrom/#files"
+"Release Notes" = "https://github.com/levi2234/Angstrom/releases"
+
+[project.scripts]
+angstrom = "angstrom.cli:main"
 
 [tool.flit.module]
 name = "angstrom"
@@ -105,12 +138,12 @@ exclude = [
     "**/node_modules",
     "**/__pycache__",
 ]
-venv = "env37"
+venv = ".venv"
 
 reportMissingImports = true
 reportMissingTypeStubs = false
 
-pythonVersion = "3.7"
+pythonVersion = "3.8"
 pythonPlatform = "Linux"
 
 executionEnvironments = [
@@ -126,39 +159,33 @@ testpaths = "tests"
 junit_family = "xunit2"
 markers = [
     "integration: marks as integration test",
-    "notebooks: marks as notebook test",
     "gpu: marks as gpu test",
-    "spark: marks tests which need Spark",
     "slow: marks tests as slow",
     "unit: fast offline tests",
+    "video: marks tests that process video files",
+    "motion: marks tests related to motion amplification",
+    "phase: marks tests related to phase processing",
+    "pyramid: marks tests related to steerable pyramids",
 ]
 
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py, integration, spark, all
+envlist = py, integration, gpu, all
 
 [testenv]
 commands =
-    pytest -m "not integration and not spark" {posargs}
+    pytest -m "not integration and not gpu" {posargs}
 
 [testenv:integration]
 commands =
     pytest -m "integration" {posargs}
 
-[testenv:spark]
-extras = spark
-setenv =
-       PYSPARK_DRIVER_PYTHON = {envpython}
-       PYSPARK_PYTHON = {envpython}
+[testenv:gpu]
 commands =
-    pytest -m "spark" {posargs}
+    pytest -m "gpu" {posargs}
 
 [testenv:all]
-extras = all
-setenv =
-       PYSPARK_DRIVER_PYTHON = {envpython}
-       PYSPARK_PYTHON = {envpython}
 commands =
     pytest {posargs}
 """
@@ -168,11 +195,8 @@ extension-pkg-whitelist= [
     "numpy",
     "torch",
     "cv2",
-    "pyodbc",
-    "pydantic",
-    "ciso8601",
-    "netcdf4",
-    "scipy"
+    "scipy",
+    "tqdm"
 ]
 ignore="CVS"
 ignore-patterns="test.*?py,conftest.py"
@@ -259,18 +283,17 @@ check-str-concat-over-line-jumps="no"
 
 [tool.pylint.'TYPECHECK']
 contextmanager-decorators="contextlib.contextmanager"
-generated-members="numpy.*,np.*,pyspark.sql.functions,collect_list"
+generated-members="numpy.*,np.*,torch.*"
 ignore-mixin-members="yes"
 ignore-none="yes"
 ignore-on-opaque-inference="yes"
-ignored-classes="optparse.Values,thread._local,_thread._local,numpy,torch,swagger_client"
-ignored-modules="numpy,torch,swagger_client,netCDF4,scipy"
+ignored-classes="optparse.Values,thread._local,_thread._local,numpy,torch"
+ignored-modules="numpy,torch,scipy,cv2"
 missing-member-hint="yes"
 missing-member-hint-distance=1
 missing-member-max-choices=1
 
 [tool.pylint.'VARIABLES']
-additional-builtins="dbutils"
 allow-global-unused-variables="yes"
 callbacks= [
     "cb_",
