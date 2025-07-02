@@ -12,7 +12,6 @@ Angstrom is a Python library for phase-based motion amplification in videos. It 
    :maxdepth: 2
    :caption: Contents:
 
-   python_package
    modules
 
 Installation

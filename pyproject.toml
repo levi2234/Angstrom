@@ -30,11 +30,11 @@ requires-python = ">=3.8.1"
 dynamic = ["version"]
 keywords = ["motion-amplification", "computer-vision", "video-processing", "phase-amplification", "steerable-pyramids", "opencv", "pytorch"]
 dependencies = [
-    "torch>=1.9.0",
     "numpy>=1.21.0",
     "opencv-python>=4.5.0",
     "scipy>=1.7.0",
-    "tqdm>=4.62.0"
+    "tqdm>=4.62.0",
+    "matplotlib>=3.5.0"
 ]
 
 [project.optional-dependencies]
@@ -64,14 +64,13 @@ docs = [
     "sphinx>=4.0.0",
     "sphinx-rtd-theme>=1.0.0",
     "sphinx-copybutton>=0.5.0",
-    "sphinx-autodoc-typehints>=1.12.0"
+    "sphinx-autodoc-typehints>=1.12.0",
+    "sphinx-book-theme>=1.1.4"
 ]
 
 # GPU acceleration (optional)
 gpu = [
-    "torch>=1.9.0+cu118; platform_system == 'Linux'",
-    "torch>=1.9.0+cu118; platform_system == 'Windows'",
-    "torch>=1.9.0; platform_system == 'Darwin'"
+    "torch>=1.9.0"
 ]
 
 # All dependencies

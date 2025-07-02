@@ -10,8 +10,7 @@ from tqdm import tqdm
 
 class MotionAmplifier:
     def __init__(self, device=None):
-        """
-        Initialize the MotionAmplifier for video processing.
+        """Initialize the MotionAmplifier for video processing.
 
         Args:
             device (torch.device, optional): Device to use for computation.
@@ -26,8 +25,7 @@ class MotionAmplifier:
         self.temporal_filtered_coeffs = None
 
     def load_video(self, input_path):
-        """
-        Load video frames as a PyTorch tensor with video properties.
+        """Load video frames as a PyTorch tensor with video properties.
 
         Args:
             input_path (str): Path to the input video file.
@@ -48,8 +46,7 @@ class MotionAmplifier:
               f"Resolution: {self.video_shape[2]}x{self.video_shape[3]}")
 
     def process(self, input_path=None):
-        """
-        Process a video by decomposing all frames into pyramid coefficients.
+        """Process a video by decomposing all frames into pyramid coefficients.
 
         Args:
             input_path (str, optional): Path to input video. If provided, loads the video first.
@@ -77,8 +74,7 @@ class MotionAmplifier:
         return pyramid_coeffs
 
     def apply_temporal_filter(self, lowcut, highcut, order=5):
-        """
-        Apply temporal bandpass filter to the pyramid coefficients.
+        """Apply temporal bandpass filter to the pyramid coefficients.
 
         Args:
             lowcut (float): Lower frequency cutoff in Hz
@@ -140,10 +136,9 @@ class MotionAmplifier:
         return filtered_coeffs
 
     def amplify(self, amplification_factor=10, frequency_range=None):
-        """
-        Amplify motion in the video using proper motion phase extraction and amplification.
+        """Amplify motion in the video using proper motion phase extraction and amplification.
 
-        CORRECTED APPROACH:
+        This method implements the corrected approach:
         1. Extract phase coefficients for all frames
         2. Calculate motion phase (temporal differences)
         3. Apply temporal filtering to motion phase
@@ -217,8 +212,7 @@ class MotionAmplifier:
         return amplified_video
 
     def _amplify_motion_phase(self, phase_coeffs_list, amplification_factor=10, low_freq=0.1, high_freq=2.0, fps=30.0):
-        """
-        Internal method to properly amplify motion phase.
+        """Internal method to properly amplify motion phase.
 
         Args:
             phase_coeffs_list (list): List of phase coefficients for each frame
@@ -294,8 +288,7 @@ class MotionAmplifier:
         return amplified_phase_coeffs_list
 
     def save_video(self, video_tensor, output_path):
-        """
-        Save the processed video tensor to a file.
+        """Save the processed video tensor to a file.
 
         Args:
             video_tensor (torch.Tensor): Video tensor of shape [N, C, H, W]
@@ -330,8 +323,7 @@ class MotionAmplifier:
 
     def process_video(self, input_path, output_path, amplification_factor=10,
                      frequency_range=None, temporal_filter_order=5):
-        """
-        Complete video processing pipeline: load, process, amplify, and save.
+        """Complete video processing pipeline: load, process, amplify, and save.
 
         Args:
             input_path (str): Path to input video
@@ -339,6 +331,9 @@ class MotionAmplifier:
             amplification_factor (float): Motion amplification factor
             frequency_range (tuple, optional): (lowcut, highcut) frequency range in Hz
             temporal_filter_order (int): Order of the temporal filter
+
+        Returns:
+            torch.Tensor: Amplified video tensor
         """
         print("Starting video motion amplification pipeline...")
 

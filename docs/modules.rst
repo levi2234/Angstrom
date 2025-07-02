@@ -1,13 +1,5 @@
-src
-===
-
-.. toctree::
-   :maxdepth: 4
-
-   python_package
-
-Angstrom
-========
+Angstrom Package
+================
 
 .. automodule:: angstrom
    :members:
@@ -23,7 +15,7 @@ Core Module
    :show-inheritance:
 
 Motion Amplifier
----------------
+----------------
 
 .. automodule:: angstrom.core.motion_amplifier
    :members:
@@ -31,7 +23,7 @@ Motion Amplifier
    :show-inheritance:
 
 Processing Module
-----------------
+-----------------
 
 .. automodule:: angstrom.processing
    :members:
@@ -39,7 +31,7 @@ Processing Module
    :show-inheritance:
 
 Phase Processing
----------------
+----------------
 
 .. automodule:: angstrom.processing.phase
    :members:
@@ -47,7 +39,7 @@ Phase Processing
    :show-inheritance:
 
 Pyramid Processing
------------------
+------------------
 
 .. automodule:: angstrom.processing.pyramid
    :members:
@@ -55,7 +47,7 @@ Pyramid Processing
    :show-inheritance:
 
 Temporal Filtering
------------------
+------------------
 
 .. automodule:: angstrom.processing.temporal_filter
    :members:
@@ -114,6 +106,14 @@ Helpers
 -------
 
 .. automodule:: angstrom.utils.helpers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+CLI Module
+----------
+
+.. automodule:: angstrom.cli
    :members:
    :undoc-members:
    :show-inheritance:

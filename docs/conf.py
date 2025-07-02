@@ -48,7 +48,14 @@ templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "**/tests/**",  # Exclude test files
+    "**/test_*.py",  # Exclude test files
+    "**/conftest.py",  # Exclude pytest config
+]
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -56,7 +63,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_rtd_theme"
+html_theme = "sphinx_book_theme"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -65,13 +72,19 @@ html_static_path = ["_static"]
 
 # Napoleon settings
 napoleon_include_init_with_doc = True
-napoleon_include_private_with_doc = True
+napoleon_include_private_with_doc = False  # Skip private methods with formatting issues
+napoleon_google_docstring = True
+napoleon_numpy_docstring = True
 
-# Theme options
+# Theme options for sphinx_book_theme
 html_theme_options = {
     'navigation_depth': 4,
-    'titles_only': False,
     'collapse_navigation': False,
+    'show_toc_level': 2,
+    'repository_url': 'https://github.com/levi2234/Angstrom',
+    'use_repository_button': True,
+    'use_issues_button': True,
+    'use_edit_page_button': True,
 }
 
 # The name of the Pygments (syntax highlighting) style to use.
@@ -79,3 +92,28 @@ pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
+
+# Autodoc settings
+autodoc_default_options = {
+    'members': True,
+    'member-order': 'bysource',
+    'special-members': '__init__',
+    'undoc-members': False,
+    'exclude-members': '__weakref__',
+    'show-inheritance': True,
+}
+
+# Only document modules that are explicitly imported
+autodoc_mock_imports = []
+
+# Don't include module names in the documentation
+add_module_names = False
+
+# Intersphinx mapping
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/', None),
+    'opencv': ('https://docs.opencv.org/', None),
+    'torch': ('https://pytorch.org/docs/stable/', None),
+}

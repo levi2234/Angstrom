@@ -16,6 +16,7 @@ Angstrom is a Python library for **phase-based motion amplification** in videos.
 - **Multiple output formats**: Support for various video formats
 - **Configurable parameters**: Fine-tune amplification factors and frequency ranges
 - **Real-time processing**: Optimized for processing video sequences
+- **Command-line interface**: Easy-to-use CLI for batch processing
 
 ## 📦 Installation
 
@@ -31,6 +32,18 @@ cd Angstrom
 pip install -e .
 ```
 
+### Optional Dependencies
+```bash
+# With development tools
+pip install angstrom[dev]
+
+# With documentation tools
+pip install angstrom[docs]
+
+# With everything
+pip install angstrom[all]
+```
+
 ### Dependencies
 - Python 3.8+
 - PyTorch 1.9.0+
@@ -41,7 +54,7 @@ pip install -e .
 
 ## 🎯 Quick Start
 
-### Basic Motion Amplification
+### Python API
 
 ```python
 from angstrom.core.motion_amplifier import MotionAmplifier
@@ -58,7 +71,68 @@ amplifier.process_video(
 )
 ```
 
-### Advanced Usage
+### Command Line Interface
+
+```bash
+# Basic motion amplification
+angstrom input.mp4 output.mp4 --factor 10
+
+# Amplify specific frequency range (breathing motion)
+angstrom input.mp4 output.mp4 --factor 50 --freq-range 0.1 0.5
+
+# Amplify heartbeat motion
+angstrom input.mp4 output.mp4 --factor 100 --freq-range 0.8 2.0
+
+# Use GPU acceleration
+angstrom input.mp4 output.mp4 --device cuda --verbose
+```
+
+## 🔬 How It Works
+
+Angstrom uses a **phase-based motion amplification** approach:
+
+1. **Video Decomposition**: Each frame is decomposed using complex steerable pyramids
+2. **Phase Extraction**: Phase coefficients are extracted from the complex pyramid coefficients
+3. **Motion Detection**: Temporal differences between frames reveal motion information
+4. **Frequency Filtering**: Bandpass filters isolate motion at specific frequencies
+5. **Motion Amplification**: The filtered motion is amplified by a specified factor
+6. **Reconstruction**: Amplified motion is added back to the original phase and reconstructed
+
+### Key Components
+
+- **Complex Steerable Pyramids**: Multi-scale, multi-orientation decomposition
+- **Phase Manipulation**: Direct manipulation of phase coefficients for motion amplification
+- **Temporal Filtering**: Frequency-domain filtering to isolate specific motion types
+- **PyTorch Integration**: GPU-accelerated computation for efficient processing
+
+## 📁 Project Structure
+
+```
+Angstrom/
+├── src/angstrom/
+│   ├── core/
+│   │   └── motion_amplifier.py      # Main motion amplification class
+│   ├── processing/
+│   │   ├── phase.py                 # Phase extraction and manipulation
+│   │   ├── pyramid.py               # Complex steerable pyramid wrapper
+│   │   └── temporal_filter.py       # Temporal filtering utilities
+│   ├── pyramids/
+│   │   ├── steerable_pyramid.py     # Complex steerable pyramid implementation
+│   │   └── pyramid_utils.py         # Pyramid utility functions
+│   ├── io/
+│   │   └── video_io.py              # Video input/output utilities
+│   ├── utils/
+│   │   └── helpers.py               # Helper functions
+│   └── cli.py                       # Command-line interface
+├── examples/                        # Usage examples and test scripts
+├── tests/                          # Unit tests
+├── docs/                           # Documentation
+└── pyproject.toml                  # Project configuration
+```
+
+## 🧪 Examples
+
+### Basic Usage
 
 ```python
 from angstrom.core.motion_amplifier import MotionAmplifier
@@ -110,68 +184,23 @@ amplifier.process_video(
 )
 ```
 
-## 🔬 How It Works
+### Advanced Usage
 
-Angstrom uses a **phase-based motion amplification** approach:
+```python
+from angstrom.core.motion_amplifier import MotionAmplifier
+from angstrom.processing.phase import extract_phase, extract_amplitude
 
-1. **Video Decomposition**: Each frame is decomposed using complex steerable pyramids
-2. **Phase Extraction**: Phase coefficients are extracted from the complex pyramid coefficients
-3. **Motion Detection**: Temporal differences between frames reveal motion information
-4. **Frequency Filtering**: Bandpass filters isolate motion at specific frequencies
-5. **Motion Amplification**: The filtered motion is amplified by a specified factor
-6. **Reconstruction**: Amplified motion is added back to the original phase and reconstructed
+# Custom phase processing
+amplifier = MotionAmplifier()
+amplifier.load_video("input.mp4")
+amplifier.process()
 
-### Key Components
+# Extract phase and amplitude manually
+frame_coeffs = amplifier.pyramid_coeffs[0]
+phase_coeffs = extract_phase(frame_coeffs)
+amplitude_coeffs = extract_amplitude(frame_coeffs)
 
-- **Complex Steerable Pyramids**: Multi-scale, multi-orientation decomposition
-- **Phase Manipulation**: Direct manipulation of phase coefficients for motion amplification
-- **Temporal Filtering**: Frequency-domain filtering to isolate specific motion types
-- **PyTorch Integration**: GPU-accelerated computation for efficient processing
-
-## 📁 Project Structure
-
-```
-Angstrom/
-├── src/angstrom/
-│   ├── core/
-│   │   └── motion_amplifier.py      # Main motion amplification class
-│   ├── processing/
-│   │   ├── phase.py                 # Phase extraction and manipulation
-│   │   ├── pyramid.py               # Complex steerable pyramid wrapper
-│   │   └── temporal_filter.py       # Temporal filtering utilities
-│   ├── pyramids/
-│   │   ├── steerable_pyramid.py     # Complex steerable pyramid implementation
-│   │   └── pyramid_utils.py         # Pyramid utility functions
-│   ├── io/
-│   │   └── video_io.py              # Video input/output utilities
-│   └── utils/
-│       └── helpers.py               # Helper functions
-├── examples/                        # Usage examples and test scripts
-├── tests/                          # Unit tests
-├── docs/                           # Documentation
-└── pyproject.toml                  # Project configuration
-```
-
-## 🧪 Examples
-
-Check out the `examples/` directory for comprehensive usage examples:
-
-- `video_motion_amplification.py`: Complete video processing pipeline
-- `test_motion_amplification.py`: Motion amplification on test videos
-- `debug_motion_amplification.py`: Debugging and analysis tools
-- `amplify_and_save_video.py`: Simple amplification script
-
-### Running Examples
-
-```bash
-# Basic motion amplification
-python examples/amplify_and_save_video.py
-
-# Test with provided test videos
-python examples/test_motion_amplification.py
-
-# Debug motion amplification
-python examples/debug_motion_amplification.py
+# Custom processing...
 ```
 
 ## 📊 Performance
@@ -195,6 +224,18 @@ python examples/debug_motion_amplification.py
 - **`nbands`**: Number of orientation bands (default: 4)
 - **`scale_factor`**: Scaling factor between levels (default: 2)
 
+### CLI Options
+
+```bash
+angstrom --help
+```
+
+Available options:
+- `--factor, -f`: Amplification factor (default: 10.0)
+- `--freq-range, -r`: Frequency range in Hz (e.g., 0.1 2.0)
+- `--device, -d`: Device to use (cpu/cuda)
+- `--verbose, -v`: Enable verbose output
+
 ## 🐛 Troubleshooting
 
 ### Common Issues
@@ -217,11 +258,36 @@ print(f"Number of frames: {len(amplifier.pyramid_coeffs)}")
 print(f"Pyramid structure: {type(amplifier.pyramid_coeffs[0])}")
 ```
 
+### Performance Tips
+
+- Use GPU acceleration when available
+- Process videos in smaller chunks for large files
+- Adjust frequency range to match expected motion
+- Use appropriate amplification factors (start with 10-50)
+
 ## 📚 Documentation
 
 - **Full Documentation**: [https://levi2234.github.io/Angstrom/](https://levi2234.github.io/Angstrom/)
 - **API Reference**: [https://levi2234.github.io/Angstrom/modules.html](https://levi2234.github.io/Angstrom/modules.html)
 - **Examples**: See the `examples/` directory
+
+## 🧪 Testing
+
+Run the test suite:
+
+```bash
+# Install development dependencies
+pip install -e ".[dev]"
+
+# Run all tests
+pytest
+
+# Run specific test categories
+pytest -m "unit"           # Unit tests only
+pytest -m "integration"    # Integration tests
+pytest -m "gpu"           # GPU tests
+pytest -m "video"         # Video processing tests
+```
 
 ## 🤝 Contributing
 
@@ -235,7 +301,7 @@ git clone https://github.com/levi2234/Angstrom.git
 cd Angstrom
 
 # Install development dependencies
-pip install -e ".[test]"
+pip install -e ".[dev]"
 
 # Run tests
 pytest
@@ -245,6 +311,15 @@ flake8 src/
 black src/
 pylint src/
 ```
+
+### Code Quality
+
+The project uses several tools to maintain code quality:
+- **Black**: Code formatting
+- **Flake8**: Linting
+- **Pylint**: Static analysis
+- **Pytest**: Testing
+- **Pre-commit**: Git hooks
 
 ## 📄 License
 
@@ -262,6 +337,28 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Discussions**: [GitHub Discussions](https://github.com/levi2234/Angstrom/discussions)
 - **Email**: levi2234@hotmail.com
 
+## 🔗 Related Projects
+
+- [Eulerian Video Magnification](https://people.csail.mit.edu/mrub/evm/)
+- [PyTorchSteerablePyramid](https://github.com/tomrunia/PyTorchSteerablePyramid)
+- [OpenCV](https://opencv.org/)
+- [PyTorch](https://pytorch.org/)
+
 ---
 
 **Made with ❤️ for the computer vision community**
+
+## Generating Documentation Locally
+
+1. Install the package with documentation dependencies:
+   ```bash
+   pip install -e ".[docs]"
+   ```
+
+2. Generate the documentation:
+   ```bash
+   cd docs
+   make html
+   ```
+
+3. View the documentation by opening `docs/_build/html/index.html` in your browser.
