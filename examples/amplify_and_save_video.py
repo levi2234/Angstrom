@@ -12,8 +12,8 @@ from angstrom.io.video_io import write_video_frames
 #INPUT_VIDEO = "test_subtle_motion.mp4"
 INPUT_VIDEO = "src/angstrom/data/testvideos/turtleshort.mp4"
 OUTPUT_VIDEO = "amplified_output.mp4"
-AMPLIFICATION_FACTOR = 1000
-FREQ_RANGE = (0.25, 0.35)  # Hz, matches the 0.3 Hz FFT bin
+AMPLIFICATION_FACTOR = 10
+FREQ_RANGE = (0.25, 4)  # Hz, matches the 0.3 Hz FFT bin
 
 if not os.path.exists(INPUT_VIDEO):
     print(f"Input video not found: {INPUT_VIDEO}")

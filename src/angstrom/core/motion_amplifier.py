@@ -3,8 +3,8 @@ import cv2
 import numpy as np
 from angstrom.io.video_io import read_video_frames, write_video_frames
 from angstrom.processing.pyramid import ComplexSteerablePyramid
-from angstrom.processing.phase import extract_phase, amplify_phase, extract_amplitude, reconstruct_from_amplitude_and_phase, amplify_motion_phase, amplify_phase_temporal_fft, amplify_phase_bandpass
-from angstrom.processing.temporal_filter import butter_bandpass_filter
+from angstrom.processing.phase import extract_phase,  extract_amplitude, reconstruct_from_amplitude_and_phase
+from angstrom.processing.filters import butter_bandpass_filter, temporal_ideal_filter
 import torch
 from tqdm import tqdm
 
@@ -119,8 +119,8 @@ class MotionAmplifier:
                     temporal_tensor = np.stack(temporal_sequence, axis=0)
 
                     # Apply temporal filter
-                    filtered_temporal = butter_bandpass_filter(
-                        temporal_tensor, lowcut, highcut, self.video_fps, order
+                    filtered_temporal = temporal_ideal_filter(
+                        temporal_tensor, lowcut, highcut, self.video_fps
                     )
 
                     # Convert back to tensor on the correct device
@@ -347,6 +347,7 @@ class MotionAmplifier:
 
         # Amplify motion
         amplified_video = self.amplify(amplification_factor, frequency_range)
+
 
         # Save result
         self.save_video(amplified_video, output_path)

@@ -30,26 +30,16 @@ def read_video_frames(video_path):
     return video_tensor
 
 def write_video_frames(frames, output_path, fps):
-    """Write frames to a video file.
-
-    Args:
+    """
+        Args:
         frames (list): List of frames, each of shape [H, W, C] or [H, W]
         output_path (str): Path to save the output video
         fps (float): Frames per second for the output video
     """
-    if not frames:
-        raise ValueError("No frames provided")
 
-    # Get dimensions from first frame
-    first_frame = frames[0]
-    if len(first_frame.shape) == 2:  # Grayscale
-        height, width = first_frame.shape
-    else:  # Color
-        height, width, _ = first_frame.shape
-
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # type: ignore[attr-defined]
+    height, width, _ = frames[0].shape
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
-
     for frame in frames:
         out.write(frame)
 
