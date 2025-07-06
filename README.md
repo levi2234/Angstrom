@@ -12,11 +12,13 @@ Angstrom is a Python library for **phase-based motion amplification** in videos.
 
 - **Phase-based motion amplification**: Uses complex steerable pyramids for accurate motion detection
 - **Temporal filtering**: Apply bandpass filters to target specific motion frequencies (e.g., 0.1-2.0 Hz for human motion)
-- **GPU acceleration**: Leverages PyTorch for efficient computation
+- **GPU acceleration**: Leverages PyTorch for efficient computation (optional)
 - **Multiple output formats**: Support for various video formats
 - **Configurable parameters**: Fine-tune amplification factors and frequency ranges
 - **Real-time processing**: Optimized for processing video sequences
 - **Command-line interface**: Easy-to-use CLI for batch processing
+- **Memory optimization**: Efficient processing for large videos
+- **Visualization tools**: Built-in utilities for analyzing pyramid structures and phases
 
 ## 📦 Installation
 
@@ -40,17 +42,21 @@ pip install angstrom[dev]
 # With documentation tools
 pip install angstrom[docs]
 
+# With GPU acceleration
+pip install angstrom[gpu]
+
 # With everything
 pip install angstrom[all]
 ```
 
 ### Dependencies
 - Python 3.8+
-- PyTorch 1.9.0+
-- OpenCV 4.5.0+
 - NumPy 1.21.0+
+- OpenCV 4.5.0+
 - SciPy 1.7.0+
 - tqdm 4.62.0+
+- Matplotlib 3.5.0+
+- PyTorch 1.9.0+ (optional, for GPU acceleration)
 
 ## 🎯 Quick Start
 
@@ -103,7 +109,7 @@ Angstrom uses a **phase-based motion amplification** approach:
 - **Complex Steerable Pyramids**: Multi-scale, multi-orientation decomposition
 - **Phase Manipulation**: Direct manipulation of phase coefficients for motion amplification
 - **Temporal Filtering**: Frequency-domain filtering to isolate specific motion types
-- **PyTorch Integration**: GPU-accelerated computation for efficient processing
+- **PyTorch Integration**: GPU-accelerated computation for efficient processing (optional)
 
 ## 📁 Project Structure
 
@@ -115,14 +121,20 @@ Angstrom/
 │   ├── processing/
 │   │   ├── phase.py                 # Phase extraction and manipulation
 │   │   ├── pyramid.py               # Complex steerable pyramid wrapper
-│   │   └── temporal_filter.py       # Temporal filtering utilities
+│   │   ├── filters.py               # Filtering utilities
+│   │   ├── temporal_ideal_filter.py # Temporal filtering implementation
+│   │   └── processing.py            # General processing utilities
 │   ├── pyramids/
 │   │   ├── steerable_pyramid.py     # Complex steerable pyramid implementation
 │   │   └── pyramid_utils.py         # Pyramid utility functions
 │   ├── io/
 │   │   └── video_io.py              # Video input/output utilities
 │   ├── utils/
+│   │   ├── memory_monitor.py        # Memory usage monitoring
+│   │   ├── visualization.py         # Visualization utilities
 │   │   └── helpers.py               # Helper functions
+│   ├── data/
+│   │   └── testvideos/              # Test video files
 │   └── cli.py                       # Command-line interface
 ├── examples/                        # Usage examples and test scripts
 ├── tests/                          # Unit tests
@@ -203,12 +215,54 @@ amplitude_coeffs = extract_amplitude(frame_coeffs)
 # Custom processing...
 ```
 
+### Visualization Examples
+
+```python
+from angstrom.utils.visualization import visualize_pyramid_phases
+
+# Visualize pyramid phases for analysis
+visualize_pyramid_phases(
+    pyramid_coeffs=amplifier.pyramid_coeffs[0],
+    output_path="pyramid_visualization.png"
+)
+```
+
 ## 📊 Performance
 
 - **Processing Speed**: ~2-5 frames/second on CPU, ~10-20 frames/second on GPU
 - **Memory Usage**: Scales with video resolution and number of frames
 - **Accuracy**: High-quality motion amplification with minimal artifacts
 - **Scalability**: Supports videos of various resolutions and frame rates
+
+### Memory Optimization
+
+For large videos or limited memory systems, Angstrom provides memory-efficient processing:
+
+```python
+from angstrom.core.motion_amplifier import MotionAmplifier
+from angstrom.utils.memory_monitor import MemoryMonitor
+
+# Monitor memory usage
+monitor = MemoryMonitor()
+
+# Automatic memory optimization for large videos
+amplifier = MotionAmplifier()
+amplifier.process_video(
+    input_path="large_video.mp4",
+    output_path="output.mp4",
+    amplification_factor=10
+)
+
+# Check memory usage
+monitor.print_memory_summary()
+```
+
+**Memory Optimization Features:**
+- **Streaming Processing**: Process videos in chunks to minimize memory usage
+- **Automatic Chunk Sizing**: Calculate optimal chunk size based on available memory
+- **Memory Monitoring**: Track memory usage during processing
+- **Video Downsampling**: Reduce resolution for memory-constrained systems
+- **Pyramid Compression**: Compress coefficients to save memory
 
 ## 🔧 Configuration
 
@@ -244,6 +298,7 @@ Available options:
 2. **"Video appears frozen"**: Check if motion is within the specified frequency range
 3. **"Out of memory"**: Reduce video resolution or process in smaller chunks
 4. **"Poor quality output"**: Ensure input video has sufficient motion and good lighting
+5. **"CUDA not available"**: Install PyTorch with CUDA support or use CPU processing
 
 ### Debug Mode
 
@@ -260,10 +315,11 @@ print(f"Pyramid structure: {type(amplifier.pyramid_coeffs[0])}")
 
 ### Performance Tips
 
-- Use GPU acceleration when available
+- Use GPU acceleration when available (install with `pip install angstrom[gpu]`)
 - Process videos in smaller chunks for large files
 - Adjust frequency range to match expected motion
 - Use appropriate amplification factors (start with 10-50)
+- Monitor memory usage for large videos
 
 ## 📚 Documentation
 

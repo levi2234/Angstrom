@@ -19,6 +19,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Image Processing",
     "Topic :: Scientific/Engineering :: Computer Vision",
     "Topic :: Multimedia :: Video",
@@ -26,7 +27,7 @@ classifiers = [
     "Operating System :: OS Independent",
     "Framework :: Pytest",
 ]
-requires-python = ">=3.8.1"
+requires-python = ">=3.8"
 dynamic = ["version"]
 keywords = ["motion-amplification", "computer-vision", "video-processing", "phase-amplification", "steerable-pyramids", "opencv", "pytorch"]
 dependencies = [
@@ -34,48 +35,55 @@ dependencies = [
     "opencv-python>=4.5.0",
     "scipy>=1.7.0",
     "tqdm>=4.62.0",
-    "matplotlib>=3.5.0"
+    "matplotlib>=3.5.0",
+    "psutil>=5.8.0"
 ]
 
 [project.optional-dependencies]
 # Development and testing dependencies
 dev = [
-    "bandit[toml]==1.7.5",
-    "black==23.3.0",
-    "check-manifest==0.49",
-    "flake8-bugbear==23.5.9",
-    "flake8-docstrings",
-    "flake8-formatter_junit_xml",
-    "flake8",
-    "flake8-pyproject",
-    "pre-commit==3.3.1",
-    "pylint==2.17.4",
-    "pylint_junit",
-    "pytest-cov==4.0.0",
-    "pytest-mock<3.10.1",
-    "pytest-runner",
-    "pytest==7.3.1",
-    "pytest-github-actions-annotate-failures",
-    "shellcheck-py==0.9.0.2"
+    "bandit[toml]>=1.7.5",
+    "black>=23.3.0",
+    "check-manifest>=0.49",
+    "flake8-bugbear>=23.5.9",
+    "flake8-docstrings>=1.7.0",
+    "flake8-formatter_junit_xml>=1.0.0",
+    "flake8>=6.0.0",
+    "flake8-pyproject>=1.2.0",
+    "pre-commit>=3.3.1",
+    "pylint>=2.17.4",
+    "pylint_junit>=0.3.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "pytest-runner>=6.0.0",
+    "pytest>=7.3.1",
+    "pytest-github-actions-annotate-failures>=0.1.0",
+    "shellcheck-py>=0.9.0.2"
 ]
 
 # Documentation dependencies
 docs = [
-    "sphinx>=4.0.0",
-    "sphinx-rtd-theme>=1.0.0",
+    "sphinx>=6.0.0",
+    "sphinx-rtd-theme>=1.3.0",
     "sphinx-copybutton>=0.5.0",
-    "sphinx-autodoc-typehints>=1.12.0",
+    "sphinx-autodoc-typehints>=1.24.0",
     "sphinx-book-theme>=1.1.4"
 ]
 
 # GPU acceleration (optional)
 gpu = [
-    "torch>=1.9.0"
+    "torch>=1.13.0"
+]
+
+# Visualization tools (optional)
+viz = [
+    "matplotlib>=3.5.0",
+    "pillow>=9.0.0"
 ]
 
 # All dependencies
 all = [
-    "angstrom[dev,docs,gpu]"
+    "angstrom[dev,docs,gpu,viz]"
 ]
 
 [project.urls]
@@ -142,7 +150,7 @@ venv = ".venv"
 reportMissingImports = true
 reportMissingTypeStubs = false
 
-pythonVersion = "3.8"
+pythonVersion = "3.9"
 pythonPlatform = "Linux"
 
 executionEnvironments = [
