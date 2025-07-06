@@ -153,19 +153,46 @@ class SteerablePyramid():
         image_dft = np.fft.fftshift(np.fft.fft2(image))
 
         pyramid = []
-        for filt, crop in zip(cropped_filters, crops):
-            # get filtered/decomposed DFT
-            dft = image_dft[crop[0]:crop[1], crop[2]:crop[3]] * filt
+        idx = 0
+        # Highpass (first filter)
+        filt, crop = cropped_filters[idx], crops[idx]
+        dft = image_dft[crop[0]:crop[1], crop[2]:crop[3]] * filt
+        if freq:
+            pyramid.append(dft)
+        elif self.complex_pyr:
+            pyramid.append(np.fft.ifft2(np.fft.ifftshift(dft)))
+        else:
+            pyramid.append(np.fft.ifft2(np.fft.ifftshift(dft)).real)
+        idx += 1
 
-            if freq:
-                pyramid.append(dft)
-            elif self.complex_pyr:
-                pyramid.append(np.fft.ifft2(np.fft.ifftshift(dft)))
-            else:
-                pyramid.append(np.fft.ifft2(np.fft.ifftshift(dft)).real)
+        # Bandpass levels (grouped by orientations)
+        for band_level in range(self.num_filts):
+            bands = []
+            for b in range(self.orientations):
+                filt, crop = cropped_filters[idx], crops[idx]
+                dft = image_dft[crop[0]:crop[1], crop[2]:crop[3]] * filt
+                if freq:
+                    band = dft
+                elif self.complex_pyr:
+                    band = np.fft.ifft2(np.fft.ifftshift(dft))
+                else:
+                    band = np.fft.ifft2(np.fft.ifftshift(dft)).real
+                bands.append(band)
+                idx += 1
+            pyramid.append(bands)
 
+        # Lowpass (last filter)
+        filt, crop = cropped_filters[idx], crops[idx]
+        dft = image_dft[crop[0]:crop[1], crop[2]:crop[3]] * filt
+        if freq:
+            pyramid.append(dft)
+        elif self.complex_pyr:
+            pyramid.append(np.fft.ifft2(np.fft.ifftshift(dft)))
+        else:
+            pyramid.append(np.fft.ifft2(np.fft.ifftshift(dft)).real)
 
         return pyramid
+
 
     def build_pyramid_full(self, image, filters, freq=False):
         """ Vectorized Pyramid Decomposition with uncropped filters array
@@ -191,16 +218,12 @@ class SteerablePyramid():
 
 
     def reconstruct_image_dft(self, pyramid, cropped_filters, crops, freq=False):
-        """ Reconstructs image DFT from the pyramid decomposition.
-            Inputs:
-                pyramid - Complex Steerable Pyramid Decomposition
-                          (either spatial or frequency domain)
-                cropped_filters - cropped filters
-                crops - filter crop indices
-                freq - flag to denote whether input pyramid is in frequency space
-            Outputs:
-                recon_dft - reconstructed image DFT
-            """
+        """
+        Reconstructs image DFT from the pyramid decomposition.
+        Accepts grouped (bandpass as lists) or flat structure.
+        """
+        # Always flatten the pyramid for legacy code
+        pyramid = flatten_pyramid(pyramid)
         h, w = pyramid[0].shape
         recon_dft = np.zeros((h, w), dtype=np.complex128)
         for i, (pyr, filt, crop) in enumerate(zip(pyramid, cropped_filters, crops)):
@@ -427,3 +450,15 @@ class SuboctaveSP(SteerablePyramid):
             filters.append(lopass)
 
         return filters, crops
+
+
+def flatten_pyramid(pyramid):
+    flat = []
+    for level in pyramid:
+        if isinstance(level, list):
+            flat.extend(level)
+        else:
+            flat.append(level)
+    return flat
+
+

@@ -8,7 +8,7 @@ import cv2
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from angstrom.processing.pyramid import ComplexSteerablePyramid
-from angstrom.processing.phase import extract_phase, amplify_phase, extract_amplitude, reconstruct_from_amplitude_and_phase
+from angstrom.processing.phase import extract_phase,  extract_amplitude, reconstruct_from_amplitude_and_phase
 
 def test_multi_frame_processing():
     """
@@ -52,8 +52,7 @@ def test_multi_frame_processing():
         phase = extract_phase(coeffs)
         amplitude = extract_amplitude(coeffs)
 
-        # Amplify phase
-        amplified_phase = amplify_phase(phase, 5)
+
 
         # Reconstruct
         recombined = reconstruct_from_amplitude_and_phase(amplitude, amplified_phase)

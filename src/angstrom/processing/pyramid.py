@@ -1,9 +1,9 @@
 import torch
 import numpy as np
-from angstrom.pyramids.steerable_pyramid import SuboctaveSP
+from angstrom.pyramids.steerable_pyramid import SuboctaveSP , SteerablePyramid
 
 class ComplexSteerablePyramid:
-    def __init__(self, height=5, nbands=4, scale_factor=2):
+    def __init__(self, height=5, nbands=4, scale_factor=2, pyramid_type="pyramidal"):
         """
         Initializes the ComplexSteerablePyramid.
 
@@ -18,7 +18,11 @@ class ComplexSteerablePyramid:
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         # Initialize the pyramid using the custom implementation
         try:
-            self.pyr = SuboctaveSP(depth=height, orientations=nbands, filters_per_octave=1, complex_pyr=True)
+
+            if pyramid_type == "suboctave":
+                self.pyr = SuboctaveSP(depth=height, orientations=nbands, filters_per_octave=1, complex_pyr=True)
+            elif pyramid_type == "pyramidal":
+                self.pyr = SteerablePyramid(depth=height, orientations=nbands, filters_per_octave=1, complex_pyr=True)
         except Exception as e:
             raise RuntimeError(f"Failed to initialize SuboctaveSP: {e}")
 

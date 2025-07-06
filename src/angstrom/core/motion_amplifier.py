@@ -8,6 +8,7 @@ from angstrom.processing.filters import butter_bandpass_filter, temporal_ideal_f
 import torch
 from tqdm import tqdm
 
+
 class MotionAmplifier:
     def __init__(self, device=None):
         """Initialize the MotionAmplifier for video processing.
@@ -71,69 +72,10 @@ class MotionAmplifier:
             pyramid_coeffs.append(coeffs)
 
         self.pyramid_coeffs = pyramid_coeffs
+
+
         return pyramid_coeffs
 
-    def apply_temporal_filter(self, lowcut, highcut, order=5):
-        """Apply temporal bandpass filter to the pyramid coefficients.
-
-        Args:
-            lowcut (float): Lower frequency cutoff in Hz
-            highcut (float): Upper frequency cutoff in Hz
-            order (int): Filter order
-
-        Returns:
-            list: Temporally filtered pyramid coefficients
-        """
-        if self.pyramid_coeffs is None:
-            raise ValueError("No pyramid coefficients available. Run process() first.")
-
-        if self.video_fps is None:
-            raise ValueError("Video FPS not available. Make sure video was loaded properly.")
-
-        print(f"Applying temporal filter: {lowcut}-{highcut} Hz...")
-
-        # Convert pyramid coefficients to numpy for temporal filtering
-        filtered_coeffs = []
-
-        # Get the structure of coefficients from the first frame
-        coeff_structure = self.pyramid_coeffs[0]
-
-        # For each level and orientation in the pyramid
-        for level_idx, level in enumerate(coeff_structure):
-            if isinstance(level, list):  # Bandpass filters
-                filtered_level = []
-                for band_idx, _ in enumerate(level):
-                    # Extract temporal sequence for this band
-                    temporal_sequence = []
-                    for frame_coeffs in self.pyramid_coeffs:
-                        band_data = frame_coeffs[level_idx][band_idx]
-                        # Convert to numpy and take real part for filtering
-                        # Ensure we're on CPU for numpy operations
-                        if band_data.device.type != 'cpu':
-                            band_np = band_data.cpu().numpy().real
-                        else:
-                            band_np = band_data.numpy().real
-                        temporal_sequence.append(band_np)
-
-                    # Stack temporal sequence: [T, H, W]
-                    temporal_tensor = np.stack(temporal_sequence, axis=0)
-
-                    # Apply temporal filter
-                    filtered_temporal = temporal_ideal_filter(
-                        temporal_tensor, lowcut, highcut, self.video_fps
-                    )
-
-                    # Convert back to tensor on the correct device
-                    filtered_complex = torch.from_numpy(filtered_temporal).to(self.device)
-                    filtered_level.append(filtered_complex)
-
-                filtered_coeffs.append(filtered_level)
-            else:
-                # For lowpass/highpass, just use the first frame's coefficients
-                filtered_coeffs.append(level)
-
-        self.temporal_filtered_coeffs = filtered_coeffs
-        return filtered_coeffs
 
     def amplify(self, amplification_factor=10, frequency_range=None):
         """Amplify motion in the video using proper motion phase extraction and amplification.
@@ -214,9 +156,15 @@ class MotionAmplifier:
     def _amplify_motion_phase(self, phase_coeffs_list, amplification_factor=10, low_freq=0.1, high_freq=2.0, fps=30.0):
         """Internal method to properly amplify motion phase.
 
+        This method implements the correct phase-based motion amplification according to theory:
+        1. Extract phase differences: Δϕ(t) = ϕ(t) - ϕ(0)
+        2. Apply temporal bandpass filter to phase differences: bandpass(Δϕ(t))
+        3. Amplify the filtered phase deviations: α * bandpass(Δϕ(t))
+        4. Add amplified phase deviations to base phase: ϕ̃(t) = ϕ(0) + α * bandpass(Δϕ(t))
+
         Args:
             phase_coeffs_list (list): List of phase coefficients for each frame
-            amplification_factor (float): Amplification factor
+            amplification_factor (float): Amplification factor α
             low_freq (float): Lower frequency bound (Hz)
             high_freq (float): Upper frequency bound (Hz)
             fps (float): Frames per second
@@ -227,6 +175,10 @@ class MotionAmplifier:
         num_frames = len(phase_coeffs_list)
         if num_frames < 2:
             return phase_coeffs_list
+
+        # Check if pyramid coefficients are available
+        if self.pyramid_coeffs is None:
+            raise ValueError("No pyramid coefficients available. Run process() first.")
 
         # Get structure from first frame
         first_frame = phase_coeffs_list[0]
@@ -240,38 +192,59 @@ class MotionAmplifier:
                 amplified_bands = []
 
                 for band_idx in range(n_bands):
-                    # Extract temporal sequence for this band: [T, H, W]
-                    temporal_sequence = []
+                    # Extract temporal sequence of PHASE coefficients: [T, H, W]
+                    phase_temporal_sequence = []
                     for frame_coeffs in phase_coeffs_list:
                         band_data = frame_coeffs[level_idx][band_idx]
                         if isinstance(band_data, torch.Tensor):
-                            temporal_sequence.append(band_data.cpu().numpy())
+                            phase_temporal_sequence.append(band_data.cpu().numpy())
+                        elif isinstance(band_data, np.ndarray):
+                            phase_temporal_sequence.append(band_data)
                         else:
-                            temporal_sequence.append(np.zeros_like(band_data))
+                            # Handle scalar or other types
+                            if hasattr(band_data, 'shape'):
+                                phase_temporal_sequence.append(np.zeros_like(band_data))
+                            else:
+                                phase_temporal_sequence.append(np.array(0.0))
 
-                    # Stack into [T, H, W] array
-                    phase_band = np.stack(temporal_sequence, axis=0)
+                    # Stack into [T, H, W] array of phase coefficients
+                    phase_band = np.stack(phase_temporal_sequence, axis=0)
 
-                    # Extract motion phase (temporal differences)
-                    motion_phase = np.zeros_like(phase_band)
-                    for t in range(1, num_frames):
-                        # Calculate phase difference (motion)
-                        motion_phase[t] = phase_band[t] - phase_band[t-1]
+                    # Step 1: Calculate phase differences from base phase (frame 0)
+                    # Δϕ(t) = ϕ(t) - ϕ(0)
+                    base_phase = phase_band[0]  # ϕ(0)
+                    phase_differences = np.zeros_like(phase_band)
+                    for t in range(num_frames):
+                        phase_diff = phase_band[t] - base_phase
+                        # Handle phase wrapping (ensure differences are in [-π, π])
+                        phase_diff = np.mod(phase_diff + np.pi, 2*np.pi) - np.pi
+                        phase_differences[t] = phase_diff
 
-                    # Apply temporal bandpass filter to motion phase
-                    filtered_motion = butter_bandpass_filter(motion_phase, low_freq, high_freq, fps, order=2)
+                    # Step 2: Apply temporal bandpass filter to phase differences
+                    # bandpass(Δϕ(t))
+                    filtered_phase_differences = temporal_ideal_filter(phase_differences, low_freq, high_freq, fps)
 
-                    # Amplify the filtered motion
-                    amplified_motion = filtered_motion * amplification_factor
+                    # Step 3: Amplify the filtered phase deviations
+                    # α * bandpass(Δϕ(t))
+                    amplified_phase_deviations = filtered_phase_differences * amplification_factor
 
-                    # Add amplified motion to original phase
-                    amplified_phase = phase_band + amplified_motion
+                    # Step 4: Add amplified phase deviations to base phase
+                    # ϕ̃(t) = ϕ(0) + α * bandpass(Δϕ(t))
+                    amplified_phase = np.zeros_like(phase_band)
+                    for t in range(num_frames):
+                        amplified_phase[t] = base_phase + amplified_phase_deviations[t]
+                        # Ensure phase stays within reasonable bounds
+                        amplified_phase[t] = np.mod(amplified_phase[t] + np.pi, 2*np.pi) - np.pi
 
                     # Split back into frames
                     for t in range(num_frames):
                         if len(amplified_bands) <= t:
                             amplified_bands.append([])
-                        amplified_bands[t].append(torch.from_numpy(amplified_phase[t]))
+                        phase_frame = amplified_phase[t]
+                        if isinstance(phase_frame, np.ndarray):
+                            amplified_bands[t].append(torch.from_numpy(phase_frame))
+                        else:
+                            amplified_bands[t].append(torch.tensor(phase_frame))
 
                 # Add to output
                 for t in range(num_frames):
@@ -320,37 +293,3 @@ class MotionAmplifier:
         # Save video
         write_video_frames(frames, output_path, self.video_fps)
         print(f"Video saved to: {output_path}")
-
-    def process_video(self, input_path, output_path, amplification_factor=10,
-                     frequency_range=None, temporal_filter_order=5):
-        """Complete video processing pipeline: load, process, amplify, and save.
-
-        Args:
-            input_path (str): Path to input video
-            output_path (str): Path to save output video
-            amplification_factor (float): Motion amplification factor
-            frequency_range (tuple, optional): (lowcut, highcut) frequency range in Hz
-            temporal_filter_order (int): Order of the temporal filter
-
-        Returns:
-            torch.Tensor: Amplified video tensor
-        """
-        print("Starting video motion amplification pipeline...")
-
-        # Load and process video
-        self.load_video(input_path)
-        self.process()
-
-        # Apply temporal filtering if frequency range is specified
-        if frequency_range is not None:
-            self.apply_temporal_filter(*frequency_range, temporal_filter_order)
-
-        # Amplify motion
-        amplified_video = self.amplify(amplification_factor, frequency_range)
-
-
-        # Save result
-        self.save_video(amplified_video, output_path)
-
-        print("Video processing completed!")
-        return amplified_video

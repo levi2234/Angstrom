@@ -10,10 +10,10 @@ from angstrom.core.motion_amplifier import MotionAmplifier
 from angstrom.io.video_io import write_video_frames
 
 #INPUT_VIDEO = "test_subtle_motion.mp4"
-INPUT_VIDEO = "src/angstrom/data/testvideos/turtleshort.mp4"
+INPUT_VIDEO = "src/angstrom/data/testvideos/pulse_test.mp4"
 OUTPUT_VIDEO = "amplified_output.mp4"
 AMPLIFICATION_FACTOR = 10
-FREQ_RANGE = (0.25, 4)  # Hz, matches the 0.3 Hz FFT bin
+FREQ_RANGE = (0.1, 4)  # Hz, matches the 0.3 Hz FFT bin
 
 if not os.path.exists(INPUT_VIDEO):
     print(f"Input video not found: {INPUT_VIDEO}")
@@ -26,7 +26,7 @@ amplifier.load_video(INPUT_VIDEO)
 amplifier.process()
 amplified_video = amplifier.amplify(
     amplification_factor=AMPLIFICATION_FACTOR,
-    frequency_range=None
+    frequency_range=FREQ_RANGE
 )
 
 # Convert to numpy and save as video
