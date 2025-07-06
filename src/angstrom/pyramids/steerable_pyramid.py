@@ -1,13 +1,18 @@
 import numpy as np
-import torch
 from scipy.special import factorial
 import matplotlib.pyplot as plt
-from angstrom.pyramids.pyramid_utils import *
+from angstrom.pyramids.pyramid_utils import get_polar_grid, get_filter_crops
 
 
-## Steerable Pyramid Base class
+# Steerable Pyramid Base class
 class SteerablePyramid():
-    def __init__(self, depth, orientations, filters_per_octave=1, twidth=1, complex_pyr=False):
+    def __init__(
+            self,
+            depth,
+            orientations,
+            filters_per_octave=1,
+            twidth=1,
+            complex_pyr=False):
         """
             depth - Pyramid Depth (height) of Pyramid Decomposition
             orientations - number of orientations (number of bands)
@@ -28,11 +33,10 @@ class SteerablePyramid():
         self.complex_pyr = complex_pyr
 
         # number of filters in each band (does not include hi and lo pass)
-        self.num_filts = depth*filters_per_octave
+        self.num_filts = depth * filters_per_octave
 
         # octaves per filter (bandwidth in terms of octaves)
-        self.octave_bw = 1.0/filters_per_octave
-
+        self.octave_bw = 1.0 / filters_per_octave
 
     def _get_radial_mask(self, radius, r):
         """ Obtains Radial High and Low Pass Filters
@@ -47,11 +51,10 @@ class SteerablePyramid():
         log_rad = np.log2(radius) - np.log2(r)
 
         hi_mask = np.clip(log_rad, -self.twidth, 0)
-        hi_mask = np.abs(np.cos(hi_mask*np.pi/(2*self.twidth)))
+        hi_mask = np.abs(np.cos(hi_mask * np.pi / (2 * self.twidth)))
         lo_mask = np.sqrt(1.0 - hi_mask**2)
 
         return lo_mask, hi_mask
-
 
     def _get_angle_mask(self, angle, b):
         """ Obtains Angle Mask
@@ -62,15 +65,25 @@ class SteerablePyramid():
                 angle_mask - Angular mask
             """
         order = self.orientations - 1
-        const = np.power(2, (2*order)) * np.power(factorial(order), 2)/(self.orientations*factorial(2*order))
-        angle = np.mod(np.pi + angle - np.pi*b/self.orientations, 2*np.pi) - np.pi
+        const = np.power(2,
+                         (2 * order)) * np.power(factorial(order),
+                                                 2) / (self.orientations * factorial(2 * order))
+        angle = np.mod(
+            np.pi + angle - np.pi * b / self.orientations,
+            2 * np.pi) - np.pi
 
         if self.complex_pyr:
             # complex (only use single lobe due to conjugate symmetry)
-            angle_mask = 2*np.sqrt(const) * np.power(np.cos(angle), order) * (np.abs(angle) < np.pi/2)
+            angle_mask = 2 * \
+                np.sqrt(const) * np.power(np.cos(angle), order) * (np.abs(angle) < np.pi / 2)
         else:
             # non-complex take magnitude to ensure both lobes are acquired
-            angle_mask = np.abs(2*np.sqrt(const) * np.power(np.cos(angle), order))
+            angle_mask = np.abs(
+                2 *
+                np.sqrt(const) *
+                np.power(
+                    np.cos(angle),
+                    order))
 
         return angle_mask
 
@@ -88,7 +101,8 @@ class SteerablePyramid():
 
         # radial_vals specify radial spacing between adjacent filters
         # they determine the lo/hi cutoffs
-        radial_vals = 2.0**np.arange(-self.depth, self.octave_bw, self.octave_bw)[::-1]
+        radial_vals = 2.0**np.arange(-self.depth,
+                                     self.octave_bw, self.octave_bw)[::-1]
 
         # get initial Low and High Pass Filters
         lo_mask_prev, hi_mask = self._get_radial_mask(radius, r=radial_vals[0])
@@ -117,7 +131,7 @@ class SteerablePyramid():
                 # get Anglular Filter Mask
                 angle_mask = self._get_angle_mask(angle, b)
 
-                filt = rad_mask*angle_mask/2
+                filt = rad_mask * angle_mask / 2
 
                 if cropped:
                     filters.append(filt[crop[0]:crop[1], crop[2]:crop[3]])
@@ -139,7 +153,6 @@ class SteerablePyramid():
             filters.append(lo_mask)
 
         return filters, crops
-
 
     def build_pyramid(self, image, cropped_filters, crops, freq=False):
         """ Build Pyramid Decomposition
@@ -193,7 +206,6 @@ class SteerablePyramid():
 
         return pyramid
 
-
     def build_pyramid_full(self, image, filters, freq=False):
         """ Vectorized Pyramid Decomposition with uncropped filters array
             Inputs:
@@ -210,14 +222,18 @@ class SteerablePyramid():
             return dft
 
         if self.complex_pyr:
-            pyramid = np.fft.ifft2(np.fft.ifftshift(dft, axes=(1,2)))
+            pyramid = np.fft.ifft2(np.fft.ifftshift(dft, axes=(1, 2)))
         else:
-            pyramid = np.fft.ifft2(np.fft.ifftshift(dft, axes=(1,2))).real
+            pyramid = np.fft.ifft2(np.fft.ifftshift(dft, axes=(1, 2))).real
 
         return pyramid
 
-
-    def reconstruct_image_dft(self, pyramid, cropped_filters, crops, freq=False):
+    def reconstruct_image_dft(
+            self,
+            pyramid,
+            cropped_filters,
+            crops,
+            freq=False):
         """
         Reconstructs image DFT from the pyramid decomposition.
         Accepts grouped (bandpass as lists) or flat structure.
@@ -226,7 +242,8 @@ class SteerablePyramid():
         pyramid = flatten_pyramid(pyramid)
         h, w = pyramid[0].shape
         recon_dft = np.zeros((h, w), dtype=np.complex128)
-        for i, (pyr, filt, crop) in enumerate(zip(pyramid, cropped_filters, crops)):
+        for i, (pyr, filt, crop) in enumerate(
+                zip(pyramid, cropped_filters, crops)):
             # dft of sub band
             if freq:
                 dft = pyr
@@ -234,13 +251,13 @@ class SteerablePyramid():
                 dft = np.fft.fftshift(np.fft.fft2(pyr))
 
             # accumulate reconstructed sub bands
-            if self.complex_pyr and (i !=0 ) and (i != (len(cropped_filters) - 1)):
-                recon_dft[crop[0]:crop[1], crop[2]:crop[3]] += 2.0*dft*filt
+            if self.complex_pyr and (i != 0) and (
+                    i != (len(cropped_filters) - 1)):
+                recon_dft[crop[0]:crop[1], crop[2]:crop[3]] += 2.0 * dft * filt
             else:
-                recon_dft[crop[0]:crop[1], crop[2]:crop[3]] += dft*filt
+                recon_dft[crop[0]:crop[1], crop[2]:crop[3]] += dft * filt
 
         return recon_dft
-
 
     def reconstruct_image_dft_full(self, pyramid, filters, freq=False):
         """ Reconstructs image DFT from the pyramid decomposition with full pyramid
@@ -263,15 +280,20 @@ class SteerablePyramid():
                 dft = np.fft.fftshift(np.fft.fft2(pyr))
 
             # accumulate reconstructed sub bands
-            if self.complex_pyr and (i !=0 ) and (i != (len(filters) - 1)):
-                recon_dft += 2.0*dft*filt
+            if self.complex_pyr and (i != 0) and (i != (len(filters) - 1)):
+                recon_dft += 2.0 * dft * filt
             else:
-                recon_dft += dft*filt
+                recon_dft += dft * filt
 
         return recon_dft
 
-
-    def reconstruct_image(self, pyramid, filters, crops=None, full=False, freq=False):
+    def reconstruct_image(
+            self,
+            pyramid,
+            filters,
+            crops=None,
+            full=False,
+            freq=False):
         """ Reconstructs image from the pyramid decomposition.
             Inputs:
                 pyramid - Complex Steerable Pyramid Decomposition
@@ -285,10 +307,10 @@ class SteerablePyramid():
         if full:
             recon_dft = self.reconstruct_image_dft_full(pyramid, filters, freq)
         else:
-            recon_dft = self.reconstruct_image_dft(pyramid, filters, crops, freq)
+            recon_dft = self.reconstruct_image_dft(
+                pyramid, filters, crops, freq)
 
         return np.fft.ifft2(np.fft.ifftshift(recon_dft)).real
-
 
     def display(self, filters, title=""):
         """ Displays all Pyramid Filters except for Hi and Lo pass masks
@@ -296,12 +318,14 @@ class SteerablePyramid():
                 filters - cropped filters list or pyramid list
                 title - title for figure
             """
-        fig, ax = plt.subplots(self.num_filts, self.orientations, figsize=(30, 20))
+        fig, ax = plt.subplots(
+            self.num_filts, self.orientations, figsize=(
+                30, 20))
         fig.suptitle(title, size=22)
 
         idx = 0
         for i in range(self.num_filts):
-            idx = i*self.orientations
+            idx = i * self.orientations
             for j in range(1, self.orientations + 1):
                 jdx = idx + j
                 ax[i][j - 1].imshow(filters[jdx])
@@ -311,10 +335,15 @@ class SteerablePyramid():
         return fig, ax
 
 
-
-## Sub Octave Smooth window Pyramid class
+# Sub Octave Smooth window Pyramid class
 class SuboctaveSP(SteerablePyramid):
-    def __init__(self, depth, orientations, filters_per_octave, cos_order=6, complex_pyr=True):
+    def __init__(
+            self,
+            depth,
+            orientations,
+            filters_per_octave,
+            cos_order=6,
+            complex_pyr=True):
         """
         depth - Pyramid Depth (height)
         orientations - number of orientations
@@ -325,12 +354,11 @@ class SuboctaveSP(SteerablePyramid):
         NOTE: there is an issue with non-complex pyramids, not sure what it is
         """
         self.depth = depth
-        self.num_filts = depth*filters_per_octave
+        self.num_filts = depth * filters_per_octave
         self.orientations = orientations
         self.filters_per_octave = filters_per_octave
         self.cos_order = cos_order
         self.complex_pyr = complex_pyr
-
 
     def _get_angle_mask_smooth(self, angle, b):
         """ Obtains Angle Mask
@@ -341,10 +369,12 @@ class SuboctaveSP(SteerablePyramid):
                 angle_mask - Angular mask
             """
         order = self.orientations - 1
-        const = np.power(2, (2*order)) \
-                * np.power(factorial(order), 2) \
-                / (self.orientations*factorial(2*order))
-        angle = np.mod(np.pi + angle - np.pi*b/self.orientations, 2*np.pi) - np.pi
+        const = np.power(2, (2 * order)) \
+            * np.power(factorial(order), 2) \
+            / (self.orientations * factorial(2 * order))
+        angle = np.mod(
+            np.pi + angle - np.pi * b / self.orientations,
+            2 * np.pi) - np.pi
 
         # if self.complex_pyr:
         #     # complex (only use single lobe due to conjugate symmetry)
@@ -357,16 +387,14 @@ class SuboctaveSP(SteerablePyramid):
         #                         * np.power(np.cos(angle), order))
 
         angle_mask = np.sqrt(const) \
-                         * np.power(np.cos(angle), order) \
-                         * (np.abs(angle) < np.pi/2)
+            * np.power(np.cos(angle), order) \
+            * (np.abs(angle) < np.pi / 2)
 
         return angle_mask
 
-
     @staticmethod
     def window_func(x, center):
-        return np.abs(x - center) < np.pi/2
-
+        return np.abs(x - center) < np.pi / 2
 
     def get_filters(self, image, cropped=False):
         """ Builds Filters
@@ -382,28 +410,28 @@ class SuboctaveSP(SteerablePyramid):
 
         # get log radius
         rad = np.log2(radius)
-        rad = (self.depth + rad)/self.depth
-        rad = rad*(np.pi/2 + np.pi/7*self.num_filts)
+        rad = (self.depth + rad) / self.depth
+        rad = rad * (np.pi / 2 + np.pi / 7 * self.num_filts)
 
         # Build Radial Filters
         rad_filters = []
         total = np.zeros((h, w))
-        const = np.power(2, 2*self.cos_order) \
-                * np.power(factorial(self.cos_order), 2) \
-                / ((self.cos_order + 1)*factorial(2*self.cos_order))
+        const = np.power(2, 2 * self.cos_order) \
+            * np.power(factorial(self.cos_order), 2) \
+            / ((self.cos_order + 1) * factorial(2 * self.cos_order))
 
         for k in reversed(range(self.num_filts)):
-            shift = np.pi/(self.cos_order+1)*(k+1)+2*np.pi/7
-            rad_filters.append(np.sqrt(const) \
-                               * np.power(np.cos(rad - shift), self.cos_order) \
+            shift = np.pi / (self.cos_order + 1) * (k + 1) + 2 * np.pi / 7
+            rad_filters.append(np.sqrt(const)
+                               * np.power(np.cos(rad - shift), self.cos_order)
                                * self.window_func(rad, shift))
             total += rad_filters[-1]**2
 
         # get lo and hi pass filters
         dims = np.array([h, w])
 
-        center = np.ceil(dims/2).astype(int)
-        lodims = np.ceil(center/4).astype(int)
+        center = np.ceil(dims / 2).astype(int)
+        lodims = np.ceil(center / 4).astype(int)
 
         idx11 = center[0] - lodims[0]
         idx12 = center[0] + lodims[0]
@@ -430,7 +458,7 @@ class SuboctaveSP(SteerablePyramid):
 
         for rad_filt in rad_filters:
             for ang_mask in angle_masks:
-                filt = rad_filt*ang_mask
+                filt = rad_filt * ang_mask
 
                 crop = get_filter_crops(filt)
                 crops.append(crop)
@@ -439,7 +467,6 @@ class SuboctaveSP(SteerablePyramid):
                     filters.append(filt[crop[0]:crop[1], crop[2]:crop[3]])
                 else:
                     filters.append(filt)
-
 
         crop = get_filter_crops(lopass)
         crops.append(crop)
@@ -460,5 +487,3 @@ def flatten_pyramid(pyramid):
         else:
             flat.append(level)
     return flat
-
-

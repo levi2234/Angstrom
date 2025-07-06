@@ -3,6 +3,7 @@
 import torch
 import numpy as np
 
+
 def extract_phase(coeffs):
     def to_numpy(arr):
         if isinstance(arr, torch.Tensor):
@@ -15,7 +16,6 @@ def extract_phase(coeffs):
         else:
             phase_coeffs.append(np.angle(to_numpy(level)))
     return phase_coeffs
-
 
 
 def extract_amplitude(coeffs):
@@ -37,6 +37,7 @@ def to_numpy(arr):
         return arr.cpu().numpy()
     return arr
 
+
 def reconstruct_from_amplitude_and_phase(amplitude_coeffs, phase_coeffs):
     """
     Combine amplitude and phase back into complex steerable pyramid coefficients.
@@ -50,9 +51,11 @@ def reconstruct_from_amplitude_and_phase(amplitude_coeffs, phase_coeffs):
                 amp = to_numpy(amp)
                 phase = to_numpy(phase)
                 if np.isnan(amp).any() or np.isinf(amp).any():
-                    raise ValueError("Amplitude coefficients contain NaN or infinite values")
+                    raise ValueError(
+                        "Amplitude coefficients contain NaN or infinite values")
                 if np.isnan(phase).any() or np.isinf(phase).any():
-                    raise ValueError("Phase coefficients contain NaN or infinite values")
+                    raise ValueError(
+                        "Phase coefficients contain NaN or infinite values")
                 phase = np.clip(phase, -np.pi, np.pi)
                 complex_coeff = amp * np.exp(1j * phase)
                 complex_level.append(complex_coeff)

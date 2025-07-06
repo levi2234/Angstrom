@@ -1,10 +1,9 @@
-import os
 import cv2
 import numpy as np
 from angstrom.io.video_io import read_video_frames, write_video_frames
 from angstrom.processing.pyramid import ComplexSteerablePyramid
-from angstrom.processing.phase import extract_phase,  extract_amplitude, reconstruct_from_amplitude_and_phase
-from angstrom.processing.filters import butter_bandpass_filter, temporal_ideal_filter
+from angstrom.processing.phase import extract_phase, extract_amplitude, reconstruct_from_amplitude_and_phase
+from angstrom.processing.filters import temporal_ideal_filter
 import torch
 from tqdm import tqdm
 
@@ -17,7 +16,8 @@ class MotionAmplifier:
             device (torch.device, optional): Device to use for computation.
                 Defaults to CUDA if available, otherwise CPU.
         """
-        self.device = device if device is not None else torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = device if device is not None else torch.device(
+            'cuda' if torch.cuda.is_available() else 'cpu')
         self.video = None
         self.video_fps = None
         self.video_shape = None
@@ -34,17 +34,21 @@ class MotionAmplifier:
         # Get video properties
         cap = cv2.VideoCapture(input_path)
         self.video_fps = cap.get(cv2.CAP_PROP_FPS)
-        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         cap.release()
 
         # Load video frames
         self.video = read_video_frames(input_path).to(self.device)
         self.video_shape = self.video.shape  # [N, C, H, W]
 
-        print(f"Loaded video: {self.video_shape[0]} frames, {self.video_fps} FPS, "
-              f"Resolution: {self.video_shape[2]}x{self.video_shape[3]}")
+        print(
+            f"Loaded video: {
+                self.video_shape[0]} frames, {
+                self.video_fps} FPS, " f"Resolution: {
+                self.video_shape[2]}x{
+                    self.video_shape[3]}")
 
     def process(self, input_path=None):
         """Process a video by decomposing all frames into pyramid coefficients.
@@ -59,7 +63,8 @@ class MotionAmplifier:
             self.load_video(input_path)
 
         if self.video is None:
-            raise ValueError("No video loaded. Please load a video using 'load_video()' before processing.")
+            raise ValueError(
+                "No video loaded. Please load a video using 'load_video()' before processing.")
 
         print("Decomposing video frames into pyramid coefficients...")
         pyramid_coeffs = []
@@ -67,15 +72,13 @@ class MotionAmplifier:
         # Process each frame
         video_shape = self.video.shape
         for i in tqdm(range(video_shape[0]), desc="Decomposing frames"):
-            frame = self.video[i:i+1]  # [1, C, H, W]
+            frame = self.video[i:i + 1]  # [1, C, H, W]
             coeffs = self.pyramid.decompose(frame)
             pyramid_coeffs.append(coeffs)
 
         self.pyramid_coeffs = pyramid_coeffs
 
-
         return pyramid_coeffs
-
 
     def amplify(self, amplification_factor=10, frequency_range=None):
         """Amplify motion in the video using proper motion phase extraction and amplification.
@@ -97,7 +100,8 @@ class MotionAmplifier:
             torch.Tensor: Amplified video tensor of shape [N, C, H, W]
         """
         if self.pyramid_coeffs is None:
-            raise ValueError("No processing has been performed yet on the video")
+            raise ValueError(
+                "No processing has been performed yet on the video")
 
         if self.video is None:
             raise ValueError("No video loaded. Cannot amplify.")
@@ -119,7 +123,8 @@ class MotionAmplifier:
         if frequency_range is not None:
             low_freq, high_freq = frequency_range
         else:
-            # Default to amplifying motion frequencies (0.1-2.0 Hz typical for human motion)
+            # Default to amplifying motion frequencies (0.1-2.0 Hz typical for
+            # human motion)
             low_freq, high_freq = 0.1, 2.0
 
         # Apply corrected motion amplification
@@ -134,14 +139,19 @@ class MotionAmplifier:
         # Reconstruct frames using amplified phases
         print("Reconstructing amplified frames...")
         reconstructed_frames = []
-        target_size = (self.video.shape[2], self.video.shape[3])  # (height, width)
+        target_size = (
+            self.video.shape[2],
+            self.video.shape[3])  # (height, width)
 
-        for i, (amplitude_coeffs, phase_coeffs) in tqdm(enumerate(zip(amplitude_coeffs_list, amplified_phase_coeffs_list)), desc="Reconstructing frames"):
+        for i, (amplitude_coeffs, phase_coeffs) in tqdm(enumerate(zip(
+                amplitude_coeffs_list, amplified_phase_coeffs_list)), desc="Reconstructing frames"):
             # Reconstruct from amplitude and amplified phase
-            recombined = reconstruct_from_amplitude_and_phase(amplitude_coeffs, phase_coeffs)
+            recombined = reconstruct_from_amplitude_and_phase(
+                amplitude_coeffs, phase_coeffs)
 
             # Reconstruct frame using explicit target size
-            reconstructed = self.pyramid.reconstruct_with_size(recombined, target_size)
+            reconstructed = self.pyramid.reconstruct_with_size(
+                recombined, target_size)
 
             # Ensure proper shape [C, H, W]
             if reconstructed.dim() == 2:
@@ -153,7 +163,13 @@ class MotionAmplifier:
         amplified_video = torch.stack(reconstructed_frames, dim=0)
         return amplified_video
 
-    def _amplify_motion_phase(self, phase_coeffs_list, amplification_factor=10, low_freq=0.1, high_freq=2.0, fps=30.0):
+    def _amplify_motion_phase(
+            self,
+            phase_coeffs_list,
+            amplification_factor=10,
+            low_freq=0.1,
+            high_freq=2.0,
+            fps=30.0):
         """Internal method to properly amplify motion phase.
 
         This method implements the correct phase-based motion amplification according to theory:
@@ -178,7 +194,8 @@ class MotionAmplifier:
 
         # Check if pyramid coefficients are available
         if self.pyramid_coeffs is None:
-            raise ValueError("No pyramid coefficients available. Run process() first.")
+            raise ValueError(
+                "No pyramid coefficients available. Run process() first.")
 
         # Get structure from first frame
         first_frame = phase_coeffs_list[0]
@@ -192,18 +209,21 @@ class MotionAmplifier:
                 amplified_bands = []
 
                 for band_idx in range(n_bands):
-                    # Extract temporal sequence of PHASE coefficients: [T, H, W]
+                    # Extract temporal sequence of PHASE coefficients: [T, H,
+                    # W]
                     phase_temporal_sequence = []
                     for frame_coeffs in phase_coeffs_list:
                         band_data = frame_coeffs[level_idx][band_idx]
                         if isinstance(band_data, torch.Tensor):
-                            phase_temporal_sequence.append(band_data.cpu().numpy())
+                            phase_temporal_sequence.append(
+                                band_data.cpu().numpy())
                         elif isinstance(band_data, np.ndarray):
                             phase_temporal_sequence.append(band_data)
                         else:
                             # Handle scalar or other types
                             if hasattr(band_data, 'shape'):
-                                phase_temporal_sequence.append(np.zeros_like(band_data))
+                                phase_temporal_sequence.append(
+                                    np.zeros_like(band_data))
                             else:
                                 phase_temporal_sequence.append(np.array(0.0))
 
@@ -216,13 +236,16 @@ class MotionAmplifier:
                     phase_differences = np.zeros_like(phase_band)
                     for t in range(num_frames):
                         phase_diff = phase_band[t] - base_phase
-                        # Handle phase wrapping (ensure differences are in [-π, π])
-                        phase_diff = np.mod(phase_diff + np.pi, 2*np.pi) - np.pi
+                        # Handle phase wrapping (ensure differences are in [-π,
+                        # π])
+                        phase_diff = np.mod(
+                            phase_diff + np.pi, 2 * np.pi) - np.pi
                         phase_differences[t] = phase_diff
 
                     # Step 2: Apply temporal bandpass filter to phase differences
                     # bandpass(Δϕ(t))
-                    filtered_phase_differences = temporal_ideal_filter(phase_differences, low_freq, high_freq, fps)
+                    filtered_phase_differences = temporal_ideal_filter(
+                        phase_differences, low_freq, high_freq, fps)
 
                     # Step 3: Amplify the filtered phase deviations
                     # α * bandpass(Δϕ(t))
@@ -232,9 +255,11 @@ class MotionAmplifier:
                     # ϕ̃(t) = ϕ(0) + α * bandpass(Δϕ(t))
                     amplified_phase = np.zeros_like(phase_band)
                     for t in range(num_frames):
-                        amplified_phase[t] = base_phase + amplified_phase_deviations[t]
+                        amplified_phase[t] = base_phase + \
+                            amplified_phase_deviations[t]
                         # Ensure phase stays within reasonable bounds
-                        amplified_phase[t] = np.mod(amplified_phase[t] + np.pi, 2*np.pi) - np.pi
+                        amplified_phase[t] = np.mod(
+                            amplified_phase[t] + np.pi, 2 * np.pi) - np.pi
 
                     # Split back into frames
                     for t in range(num_frames):
@@ -242,9 +267,11 @@ class MotionAmplifier:
                             amplified_bands.append([])
                         phase_frame = amplified_phase[t]
                         if isinstance(phase_frame, np.ndarray):
-                            amplified_bands[t].append(torch.from_numpy(phase_frame))
+                            amplified_bands[t].append(
+                                torch.from_numpy(phase_frame))
                         else:
-                            amplified_bands[t].append(torch.tensor(phase_frame))
+                            amplified_bands[t].append(
+                                torch.tensor(phase_frame))
 
                 # Add to output
                 for t in range(num_frames):

@@ -1,6 +1,7 @@
 import cv2
 import torch
 
+
 def read_video_frames(video_path):
     """Read video frames and return them as a PyTorch tensor.
 
@@ -21,13 +22,15 @@ def read_video_frames(video_path):
         # Convert frame to grayscale
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # Shape: [H, W]
         # Add a channel dimension (C=1) and normalize to [0, 1]
-        frame_tensor = torch.from_numpy(gray_frame).float().unsqueeze(0) / 255.0  # Shape: [1, H, W]
+        frame_tensor = torch.from_numpy(gray_frame).float(
+        ).unsqueeze(0) / 255.0  # Shape: [1, H, W]
         frames.append(frame_tensor)
     cap.release()
 
     # Stack frames into a single tensor: [N, C, H, W]
     video_tensor = torch.stack(frames, dim=0)
     return video_tensor
+
 
 def write_video_frames(frames, output_path, fps):
     """

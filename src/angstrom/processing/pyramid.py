@@ -1,9 +1,15 @@
 import torch
 import numpy as np
-from angstrom.pyramids.steerable_pyramid import SuboctaveSP , SteerablePyramid
+from angstrom.pyramids.steerable_pyramid import SuboctaveSP, SteerablePyramid
+
 
 class ComplexSteerablePyramid:
-    def __init__(self, height=5, nbands=4, scale_factor=2, pyramid_type="pyramidal"):
+    def __init__(
+            self,
+            height=5,
+            nbands=4,
+            scale_factor=2,
+            pyramid_type="pyramidal"):
         """
         Initializes the ComplexSteerablePyramid.
 
@@ -15,14 +21,23 @@ class ComplexSteerablePyramid:
         """
 
         # Set the device
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device(
+            'cuda' if torch.cuda.is_available() else 'cpu')
         # Initialize the pyramid using the custom implementation
         try:
 
             if pyramid_type == "suboctave":
-                self.pyr = SuboctaveSP(depth=height, orientations=nbands, filters_per_octave=1, complex_pyr=True)
+                self.pyr = SuboctaveSP(
+                    depth=height,
+                    orientations=nbands,
+                    filters_per_octave=1,
+                    complex_pyr=True)
             elif pyramid_type == "pyramidal":
-                self.pyr = SteerablePyramid(depth=height, orientations=nbands, filters_per_octave=1, complex_pyr=True)
+                self.pyr = SteerablePyramid(
+                    depth=height,
+                    orientations=nbands,
+                    filters_per_octave=1,
+                    complex_pyr=True)
         except Exception as e:
             raise RuntimeError(f"Failed to initialize SuboctaveSP: {e}")
 
@@ -78,7 +93,8 @@ class ComplexSteerablePyramid:
         if self.original_image_size is None:
             # Fallback: use the size of the first coefficient
             h, w = coeffs[0].shape
-            print(f"Warning: No original image size stored, using coefficient size: {h}x{w}")
+            print(
+                f"Warning: No original image size stored, using coefficient size: {h}x{w}")
         else:
             h, w = self.original_image_size
             print(f"Reconstructing to original size: {h}x{w}")
@@ -94,7 +110,8 @@ class ComplexSteerablePyramid:
         else:
             # Convert back to torch tensor
             recon_tensor = torch.from_numpy(recon).to(self.device)
-            recon_tensor = recon_tensor.unsqueeze(0).unsqueeze(0)  # Add batch and channel dimensions
+            recon_tensor = recon_tensor.unsqueeze(0).unsqueeze(
+                0)  # Add batch and channel dimensions
         return recon_tensor
 
     def reconstruct_with_size(self, coeffs, target_size):
@@ -126,7 +143,8 @@ class ComplexSteerablePyramid:
         else:
             # Convert back to torch tensor
             recon_tensor = torch.from_numpy(recon).to(self.device)
-            recon_tensor = recon_tensor.unsqueeze(0).unsqueeze(0)  # Add batch and channel dimensions
+            recon_tensor = recon_tensor.unsqueeze(0).unsqueeze(
+                0)  # Add batch and channel dimensions
         return recon_tensor
 
     def updated(self):

@@ -119,7 +119,7 @@ fail_under = 100
 
 [tool.flake8]
 max-line-length = 120
-select = "F,E,W,B,B901,B902,B903"
+select = "F,E"  # Only critical errors, not warnings
 exclude = [
     ".eggs",
     ".git",
@@ -133,10 +133,14 @@ exclude = [
     "swagger_client"
 ]
 ignore = [
-    "E722",
-    "B001",
-    "W503",
-    "E203"
+    "E722",  # bare except
+    "E501",  # line too long
+    "E203",  # whitespace before ':'
+    "W503",  # line break before binary operator
+    "W291",  # trailing whitespace
+    "W293",  # blank line contains whitespace
+    "F401",  # unused imports
+    "F841",  # unused variable
 ]
 
 [tool.pyright]

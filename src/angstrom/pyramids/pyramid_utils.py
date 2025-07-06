@@ -1,6 +1,8 @@
 import numpy as np
 
-## pyramid utils
+# pyramid utils
+
+
 def get_polar_grid(h, w):
     """ Obtains Angle and Radius of Polar grid
         Inputs:
@@ -10,22 +12,23 @@ def get_polar_grid(h, w):
             radius - Radial component of Polar Grid
     """
     # Get grid for cosine ramp function
-    h2 = h//2
-    w2 = w//2
+    h2 = h // 2
+    w2 = w // 2
 
     # Get normalized frequencies (same as fftfreq) [-1, 1)
     # modulus remainders to account for odd numbers
-    wx, wy = np.meshgrid(np.arange(-w2, w2 + (w % 2))/w2, 
-                         np.arange(-h2, h2 + (h % 2))/h2)
+    wx, wy = np.meshgrid(np.arange(-w2, w2 + (w % 2)) / w2,
+                         np.arange(-h2, h2 + (h % 2)) / h2)
 
     # angular component
     angle = np.arctan2(wy, wx)
 
     # radial component
     radius = np.sqrt(wx**2 + wy**2)
-    radius[h2][w2] = radius[h2][w2 - 1] # remove zero component
+    radius[h2][w2] = radius[h2][w2 - 1]  # remove zero component
 
     return angle, radius
+
 
 def get_filter_crops(filter_in):
     """ Obtains indices that correspond to non-zero filter values and a
@@ -54,7 +57,7 @@ def get_filter_crops(filter_in):
 
 
 def get_cropped_filters(filters, crops):
-    """ Obtains list of cropped filters 
+    """ Obtains list of cropped filters
         Inputs:
             filters - list of filters
             crops - list of crop indices

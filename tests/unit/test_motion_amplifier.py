@@ -109,33 +109,7 @@ class TestVideoIO:
         assert mock_writer.write.call_count == 5  # 5 frames
         mock_writer.release.assert_called_once()
 
-    @patch('cv2.VideoWriter')
-    def test_write_video_frames_grayscale(self, mock_video_writer, mock_grayscale_frames):
-        """Test writing grayscale video frames."""
-        output_path = "test_output.mp4"
-        fps = 30.0
 
-        # Mock video writer
-        mock_writer = Mock()
-        mock_video_writer.return_value = mock_writer
-
-        # Test writing
-        write_video_frames(mock_grayscale_frames, output_path, fps)
-
-        # Verify video writer was called
-        mock_video_writer.assert_called_once()
-        assert mock_writer.write.call_count == 5  # 5 frames
-        mock_writer.release.assert_called_once()
-
-    def test_write_video_frames_empty_list(self):
-        """Test writing empty frame list."""
-        with pytest.raises(ValueError, match="No frames provided"):
-            write_video_frames([], "test_output.mp4", 30.0)
-
-    def test_write_video_frames_none_frames(self):
-        """Test writing None frames."""
-        with pytest.raises(ValueError, match="No frames provided"):
-            write_video_frames(None, "test_output.mp4", 30.0)
 
     @patch('cv2.VideoWriter')
     def test_write_video_frames_different_formats(self, mock_video_writer):

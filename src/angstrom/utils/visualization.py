@@ -1,16 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
-from typing import List, Union, Optional, Tuple
+from typing import List, Optional, Tuple
 import cv2
 
 
 def visualize_pyramid_phases(phase_coeffs_list: List,
-                           frame_idx: int = 0,
-                           max_levels: int = 5,
-                           max_bands: int = 4,
-                           figsize: Tuple[int, int] = (20, 15),
-                           save_path: Optional[str] = None) -> None:
+                             frame_idx: int = 0,
+                             max_levels: int = 5,
+                             max_bands: int = 4,
+                             figsize: Tuple[int, int] = (20, 15),
+                             save_path: Optional[str] = None) -> None:
     """
     Visualize pyramid phases from motion amplification output.
 
@@ -23,7 +23,9 @@ def visualize_pyramid_phases(phase_coeffs_list: List,
         save_path: Optional path to save the visualization
     """
     if frame_idx >= len(phase_coeffs_list):
-        print(f"Frame index {frame_idx} out of range. Available frames: {len(phase_coeffs_list)}")
+        print(
+            f"Frame index {frame_idx} out of range. Available frames: {
+                len(phase_coeffs_list)}")
         return
 
     frame_coeffs = phase_coeffs_list[frame_idx]
@@ -55,7 +57,9 @@ def visualize_pyramid_phases(phase_coeffs_list: List,
     elif cols == 1:
         axes = axes.reshape(-1, 1)
 
-    fig.suptitle(f'Pyramid Phase Visualization - Frame {frame_idx}', fontsize=16)
+    fig.suptitle(
+        f'Pyramid Phase Visualization - Frame {frame_idx}',
+        fontsize=16)
 
     plot_idx = 0
     for level_idx, num_bands, level_type in level_info:
@@ -71,10 +75,12 @@ def visualize_pyramid_phases(phase_coeffs_list: List,
                     band_data = band_data.cpu().numpy()
 
                 # Normalize phase to [-π, π] for visualization
-                phase_normalized = np.mod(band_data + np.pi, 2*np.pi) - np.pi
+                phase_normalized = np.mod(band_data + np.pi, 2 * np.pi) - np.pi
 
-                im = axes[row, col].imshow(phase_normalized, cmap='twilight', aspect='auto')
-                axes[row, col].set_title(f'Level {level_idx}, Band {band_idx}\n({level_type})')
+                im = axes[row, col].imshow(
+                    phase_normalized, cmap='twilight', aspect='auto')
+                axes[row, col].set_title(
+                    f'Level {level_idx}, Band {band_idx}\n({level_type})')
                 axes[row, col].set_xlabel('X')
                 axes[row, col].set_ylabel('Y')
 
@@ -98,7 +104,8 @@ def visualize_pyramid_phases(phase_coeffs_list: List,
             else:
                 phase_data = level_data
 
-            im = axes[row, col].imshow(phase_data, cmap='viridis', aspect='auto')
+            im = axes[row, col].imshow(
+                phase_data, cmap='viridis', aspect='auto')
             axes[row, col].set_title(f'Level {level_idx}\n({level_type})')
             axes[row, col].set_xlabel('X')
             axes[row, col].set_ylabel('Y')
@@ -124,11 +131,11 @@ def visualize_pyramid_phases(phase_coeffs_list: List,
 
 
 def visualize_phase_temporal_evolution(phase_coeffs_list: List,
-                                     level_idx: int = 0,
-                                     band_idx: int = 0,
-                                     pixel_pos: Optional[Tuple[int, int]] = None,
-                                     figsize: Tuple[int, int] = (15, 10),
-                                     save_path: Optional[str] = None) -> None:
+                                       level_idx: int = 0,
+                                       band_idx: int = 0,
+                                       pixel_pos: Optional[Tuple[int, int]] = None,
+                                       figsize: Tuple[int, int] = (15, 10),
+                                       save_path: Optional[str] = None) -> None:
     """
     Visualize temporal evolution of phase at a specific pyramid level and band.
 
@@ -179,7 +186,9 @@ def visualize_phase_temporal_evolution(phase_coeffs_list: List,
 
     # Create visualization
     fig, axes = plt.subplots(2, 2, figsize=figsize)
-    fig.suptitle(f'Phase Temporal Evolution - Level {level_idx}, Band {band_idx}', fontsize=16)
+    fig.suptitle(
+        f'Phase Temporal Evolution - Level {level_idx}, Band {band_idx}',
+        fontsize=16)
 
     # Plot 1: Temporal phase evolution at specific pixel
     axes[0, 0].plot(valid_frames, temporal_signal, 'b-', linewidth=2)
@@ -192,7 +201,7 @@ def visualize_phase_temporal_evolution(phase_coeffs_list: List,
     base_phase = temporal_signal[0]
     phase_differences = temporal_signal - base_phase
     # Handle phase wrapping
-    phase_differences = np.mod(phase_differences + np.pi, 2*np.pi) - np.pi
+    phase_differences = np.mod(phase_differences + np.pi, 2 * np.pi) - np.pi
 
     axes[0, 1].plot(valid_frames, phase_differences, 'r-', linewidth=2)
     axes[0, 1].set_title('Phase Differences from First Frame')
@@ -205,20 +214,23 @@ def visualize_phase_temporal_evolution(phase_coeffs_list: List,
     mid_frame_phase = phase_band[mid_frame_idx]
 
     im1 = axes[1, 0].imshow(mid_frame_phase, cmap='twilight', aspect='auto')
-    axes[1, 0].set_title(f'Spatial Phase Distribution (Frame {valid_frames[mid_frame_idx]})')
+    axes[1, 0].set_title(
+        f'Spatial Phase Distribution (Frame {valid_frames[mid_frame_idx]})')
     axes[1, 0].set_xlabel('X')
     axes[1, 0].set_ylabel('Y')
     plt.colorbar(im1, ax=axes[1, 0])
 
     # Mark the tracked pixel
-    axes[1, 0].plot(pixel_x, pixel_y, 'ro', markersize=8, markeredgecolor='white', markeredgewidth=2)
+    axes[1, 0].plot(pixel_x, pixel_y, 'ro', markersize=8,
+                    markeredgecolor='white', markeredgewidth=2)
 
     # Plot 4: Phase statistics over time
     phase_std = np.std(phase_band, axis=(1, 2))
     phase_mean = np.mean(phase_band, axis=(1, 2))
 
     axes[1, 1].plot(valid_frames, phase_mean, 'g-', linewidth=2, label='Mean')
-    axes[1, 1].plot(valid_frames, phase_std, 'm-', linewidth=2, label='Std Dev')
+    axes[1, 1].plot(valid_frames, phase_std, 'm-',
+                    linewidth=2, label='Std Dev')
     axes[1, 1].set_title('Phase Statistics Over Time')
     axes[1, 1].set_xlabel('Frame')
     axes[1, 1].set_ylabel('Phase (radians)')
@@ -235,12 +247,12 @@ def visualize_phase_temporal_evolution(phase_coeffs_list: List,
 
 
 def visualize_phase_comparison(original_phases: List,
-                             amplified_phases: List,
-                             frame_idx: int = 0,
-                             level_idx: int = 0,
-                             band_idx: int = 0,
-                             figsize: Tuple[int, int] = (20, 10),
-                             save_path: Optional[str] = None) -> None:
+                               amplified_phases: List,
+                               frame_idx: int = 0,
+                               level_idx: int = 0,
+                               band_idx: int = 0,
+                               figsize: Tuple[int, int] = (20, 10),
+                               save_path: Optional[str] = None) -> None:
     """
     Compare original and amplified phases side by side.
 
@@ -292,11 +304,13 @@ def visualize_phase_comparison(original_phases: List,
 
     # Create visualization
     fig, axes = plt.subplots(2, 3, figsize=figsize)
-    fig.suptitle(f'Phase Comparison - Frame {frame_idx}, Level {level_idx}, Band {band_idx}', fontsize=16)
+    fig.suptitle(
+        f'Phase Comparison - Frame {frame_idx}, Level {level_idx}, Band {band_idx}',
+        fontsize=16)
 
     # Normalize phases for visualization
-    orig_normalized = np.mod(orig_data + np.pi, 2*np.pi) - np.pi
-    amp_normalized = np.mod(amp_data + np.pi, 2*np.pi) - np.pi
+    orig_normalized = np.mod(orig_data + np.pi, 2 * np.pi) - np.pi
+    amp_normalized = np.mod(amp_data + np.pi, 2 * np.pi) - np.pi
 
     # Plot 1: Original phase
     im1 = axes[0, 0].imshow(orig_normalized, cmap='twilight', aspect='auto')
@@ -315,7 +329,7 @@ def visualize_phase_comparison(original_phases: List,
     # Plot 3: Phase difference
     phase_diff = amp_normalized - orig_normalized
     # Handle phase wrapping for difference
-    phase_diff = np.mod(phase_diff + np.pi, 2*np.pi) - np.pi
+    phase_diff = np.mod(phase_diff + np.pi, 2 * np.pi) - np.pi
 
     im3 = axes[0, 2].imshow(phase_diff, cmap='RdBu_r', aspect='auto')
     axes[0, 2].set_title('Phase Difference (Amplified - Original)')
@@ -324,8 +338,10 @@ def visualize_phase_comparison(original_phases: List,
     plt.colorbar(im3, ax=axes[0, 2])
 
     # Plot 4: Histogram comparison
-    axes[1, 0].hist(orig_normalized.flatten(), bins=50, alpha=0.7, label='Original', color='blue')
-    axes[1, 0].hist(amp_normalized.flatten(), bins=50, alpha=0.7, label='Amplified', color='red')
+    axes[1, 0].hist(orig_normalized.flatten(), bins=50,
+                    alpha=0.7, label='Original', color='blue')
+    axes[1, 0].hist(amp_normalized.flatten(), bins=50,
+                    alpha=0.7, label='Amplified', color='red')
     axes[1, 0].set_title('Phase Distribution')
     axes[1, 0].set_xlabel('Phase (radians)')
     axes[1, 0].set_ylabel('Frequency')
@@ -336,8 +352,10 @@ def visualize_phase_comparison(original_phases: List,
     h, w = orig_normalized.shape
     center_y = h // 2
 
-    axes[1, 1].plot(orig_normalized[center_y, :], 'b-', linewidth=2, label='Original')
-    axes[1, 1].plot(amp_normalized[center_y, :], 'r-', linewidth=2, label='Amplified')
+    axes[1, 1].plot(orig_normalized[center_y, :], 'b-',
+                    linewidth=2, label='Original')
+    axes[1, 1].plot(amp_normalized[center_y, :], 'r-',
+                    linewidth=2, label='Amplified')
     axes[1, 1].set_title(f'Phase Along Center Row (y={center_y})')
     axes[1, 1].set_xlabel('X')
     axes[1, 1].set_ylabel('Phase (radians)')
@@ -355,8 +373,10 @@ def visualize_phase_comparison(original_phases: List,
     x = np.arange(len(stats_data))
     width = 0.35
 
-    axes[1, 2].bar(x - width/2, [stats_data[key][0] for key in stats_data], width, label='Original', alpha=0.7)
-    axes[1, 2].bar(x + width/2, [stats_data[key][1] for key in stats_data], width, label='Amplified', alpha=0.7)
+    axes[1, 2].bar(x - width / 2, [stats_data[key][0]
+                   for key in stats_data], width, label='Original', alpha=0.7)
+    axes[1, 2].bar(x + width / 2, [stats_data[key][1]
+                   for key in stats_data], width, label='Amplified', alpha=0.7)
     axes[1, 2].set_title('Phase Statistics Comparison')
     axes[1, 2].set_xlabel('Statistic')
     axes[1, 2].set_ylabel('Value (radians)')
@@ -375,11 +395,11 @@ def visualize_phase_comparison(original_phases: List,
 
 
 def create_phase_video(phase_coeffs_list: List,
-                      level_idx: int = 0,
-                      band_idx: int = 0,
-                      output_path: str = "phase_visualization.mp4",
-                      fps: int = 30,
-                      colormap: str = 'twilight') -> None:
+                       level_idx: int = 0,
+                       band_idx: int = 0,
+                       output_path: str = "phase_visualization.mp4",
+                       fps: int = 30,
+                       colormap: str = 'twilight') -> None:
     """
     Create a video visualization of phase evolution over time.
 
@@ -416,11 +436,12 @@ def create_phase_video(phase_coeffs_list: List,
     phase_band = np.stack(temporal_sequence, axis=0)
 
     # Normalize phases for visualization
-    phase_normalized = np.mod(phase_band + np.pi, 2*np.pi) - np.pi
+    phase_normalized = np.mod(phase_band + np.pi, 2 * np.pi) - np.pi
 
     # Convert to 0-255 range for video
     phase_min, phase_max = np.min(phase_normalized), np.max(phase_normalized)
-    phase_scaled = ((phase_normalized - phase_min) / (phase_max - phase_min) * 255).astype(np.uint8)
+    phase_scaled = ((phase_normalized - phase_min) /
+                    (phase_max - phase_min) * 255).astype(np.uint8)
 
     # Apply colormap
     cmap = plt.get_cmap(colormap)
@@ -443,9 +464,9 @@ def create_phase_video(phase_coeffs_list: List,
 
         # Add frame number text
         cv2.putText(frame_bgr, f'Frame {i}', (10, 30),
-                   cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
         cv2.putText(frame_bgr, f'Level {level_idx}, Band {band_idx}', (10, 70),
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
         out.write(frame_bgr)
 
@@ -454,9 +475,9 @@ def create_phase_video(phase_coeffs_list: List,
 
 
 def visualize_pyramid_structure(phase_coeffs_list: List,
-                              frame_idx: int = 0,
-                              figsize: Tuple[int, int] = (15, 10),
-                              save_path: Optional[str] = None) -> None:
+                                frame_idx: int = 0,
+                                figsize: Tuple[int, int] = (15, 10),
+                                save_path: Optional[str] = None) -> None:
     """
     Create a comprehensive visualization of the pyramid structure.
 
@@ -492,13 +513,18 @@ def visualize_pyramid_structure(phase_coeffs_list: List,
 
     # Create visualization
     fig, axes = plt.subplots(2, 2, figsize=figsize)
-    fig.suptitle(f'Pyramid Structure Analysis - Frame {frame_idx}', fontsize=16)
+    fig.suptitle(
+        f'Pyramid Structure Analysis - Frame {frame_idx}',
+        fontsize=16)
 
     # Plot 1: Level types
     level_types = [info['type'] for info in structure_info]
-    level_counts = [level_types.count('bandpass'), level_types.count('lowpass/highpass')]
+    level_counts = [
+        level_types.count('bandpass'),
+        level_types.count('lowpass/highpass')]
 
-    axes[0, 0].pie(level_counts, labels=['Bandpass', 'Lowpass/Highpass'], autopct='%1.1f%%')
+    axes[0, 0].pie(level_counts, labels=['Bandpass',
+                   'Lowpass/Highpass'], autopct='%1.1f%%')
     axes[0, 0].set_title('Level Type Distribution')
 
     # Plot 2: Number of bands per level
@@ -512,7 +538,8 @@ def visualize_pyramid_structure(phase_coeffs_list: List,
     axes[0, 1].grid(True)
 
     # Plot 3: Level type by level
-    colors = ['red' if info['type'] == 'bandpass' else 'blue' for info in structure_info]
+    colors = ['red' if info['type'] ==
+              'bandpass' else 'blue' for info in structure_info]
     axes[1, 0].bar(levels, [1] * len(levels), color=colors)
     axes[1, 0].set_title('Level Types')
     axes[1, 0].set_xlabel('Level')
@@ -522,12 +549,12 @@ def visualize_pyramid_structure(phase_coeffs_list: List,
     # Add legend
     from matplotlib.patches import Patch
     legend_elements = [Patch(facecolor='red', label='Bandpass'),
-                      Patch(facecolor='blue', label='Lowpass/Highpass')]
+                       Patch(facecolor='blue', label='Lowpass/Highpass')]
     axes[1, 0].legend(handles=legend_elements)
 
     # Plot 4: Structure summary
     axes[1, 1].axis('off')
-    summary_text = f"Pyramid Structure Summary:\n\n"
+    summary_text = "Pyramid Structure Summary:\n\n"
     summary_text += f"Total Levels: {len(structure_info)}\n"
     summary_text += f"Bandpass Levels: {level_counts[0]}\n"
     summary_text += f"Lowpass/Highpass Levels: {level_counts[1]}\n"
@@ -535,10 +562,13 @@ def visualize_pyramid_structure(phase_coeffs_list: List,
 
     summary_text += "Level Details:\n"
     for info in structure_info:
-        summary_text += f"Level {info['level']}: {info['type']} ({info['num_bands']} bands)\n"
+        summary_text += f"Level {
+            info['level']}: {
+            info['type']} ({
+            info['num_bands']} bands)\n"
 
     axes[1, 1].text(0.1, 0.9, summary_text, transform=axes[1, 1].transAxes,
-                   fontsize=10, verticalalignment='top', fontfamily='monospace')
+                    fontsize=10, verticalalignment='top', fontfamily='monospace')
 
     plt.tight_layout()
 

@@ -6,8 +6,9 @@ import psutil
 import os
 import time
 import torch
-from typing import Dict, List, Optional
+from typing import Dict, List
 import gc
+
 
 class MemoryMonitor:
     """Monitor memory usage during video processing."""
@@ -80,13 +81,13 @@ class MemoryMonitor:
 
         print("\n=== Memory Usage Summary ===")
         print(f"Total processing time: {summary['total_time']:.2f} seconds")
-        print(f"Process memory (RSS):")
+        print("Process memory (RSS):")
         print(f"  Max: {summary['max_rss']:.1f} MB")
         print(f"  Min: {summary['min_rss']:.1f} MB")
         print(f"  Avg: {summary['avg_rss']:.1f} MB")
 
         if torch.cuda.is_available():
-            print(f"GPU memory:")
+            print("GPU memory:")
             print(f"  Max: {summary['max_gpu']:.1f} MB")
             print(f"  Min: {summary['min_gpu']:.1f} MB")
             print(f"  Avg: {summary['avg_gpu']:.1f} MB")
@@ -96,8 +97,13 @@ class MemoryMonitor:
         memory_info = self.get_memory_usage()
         return memory_info['process_rss'] > threshold_mb
 
-def estimate_video_memory_requirements(frame_count: int, width: int, height: int,
-                                     channels: int = 1, dtype: str = 'float32') -> Dict[str, float]:
+
+def estimate_video_memory_requirements(frame_count: int,
+                                       width: int,
+                                       height: int,
+                                       channels: int = 1,
+                                       dtype: str = 'float32') -> Dict[str,
+                                                                       float]:
     """Estimate memory requirements for video processing.
 
     Args:
@@ -132,14 +138,12 @@ def estimate_video_memory_requirements(frame_count: int, width: int, height: int
 
     estimated_memory = raw_memory * processing_overhead
 
-    return {
-        'raw_memory': raw_memory,
-        'estimated_total': estimated_memory,
-        'frames_per_gb': (1024 * 1024) / (width * height * channels * bytes_per_pixel * processing_overhead)
-    }
+    return {'raw_memory': raw_memory, 'estimated_total': estimated_memory, 'frames_per_gb': (
+        1024 * 1024) / (width * height * channels * bytes_per_pixel * processing_overhead)}
+
 
 def get_safe_chunk_size(available_memory_mb: float, frame_memory_mb: float,
-                       safety_factor: float = 0.8) -> int:
+                        safety_factor: float = 0.8) -> int:
     """Calculate safe chunk size for processing.
 
     Args:
@@ -153,6 +157,7 @@ def get_safe_chunk_size(available_memory_mb: float, frame_memory_mb: float,
     safe_memory = available_memory_mb * safety_factor
     max_frames = int(safe_memory / frame_memory_mb)
     return max(1, min(max_frames, 100))  # Between 1 and 100 frames
+
 
 def monitor_memory_usage(func):
     """Decorator to monitor memory usage of a function."""

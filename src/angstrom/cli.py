@@ -32,7 +32,12 @@ Examples:
 
     parser.add_argument("output", type=str, help="Output video file path")
 
-    parser.add_argument("--factor", "-f", type=float, default=10.0, help="Amplification factor (default: 10.0)")
+    parser.add_argument(
+        "--factor",
+        "-f",
+        type=float,
+        default=10.0,
+        help="Amplification factor (default: 10.0)")
 
     parser.add_argument(
         "--freq-range",
@@ -44,17 +49,29 @@ Examples:
     )
 
     parser.add_argument(
-        "--device", "-d", type=str, choices=["cpu", "cuda"], help="Device to use (default: auto-detect)"
-    )
+        "--device",
+        "-d",
+        type=str,
+        choices=[
+            "cpu",
+            "cuda"],
+        help="Device to use (default: auto-detect)")
 
-    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Enable verbose output")
 
     args = parser.parse_args()
 
     # Validate input file
     input_path = Path(args.input)
     if not input_path.exists():
-        print(f"Error: Input file '{args.input}' does not exist.", file=sys.stderr)
+        print(
+            f"Error: Input file '{
+                args.input}' does not exist.",
+            file=sys.stderr)
         sys.exit(1)
 
     # Validate output directory
@@ -70,7 +87,9 @@ Examples:
             import torch
 
             if not torch.cuda.is_available():
-                print("Warning: CUDA requested but not available. Using CPU.", file=sys.stderr)
+                print(
+                    "Warning: CUDA requested but not available. Using CPU.",
+                    file=sys.stderr)
                 device = "cpu"
 
         amplifier = MotionAmplifier(device=device)
@@ -80,14 +99,16 @@ Examples:
             print(f"Output: {output_path}")
             print(f"Amplification factor: {args.factor}")
             if args.freq_range:
-                print(f"Frequency range: {args.freq_range[0]}-{args.freq_range[1]} Hz")
+                print(
+                    f"Frequency range: {args.freq_range[0]}-{args.freq_range[1]} Hz")
 
         # Process video
         amplifier.process_video(
             input_path=str(input_path),
             output_path=str(output_path),
             amplification_factor=args.factor,
-            frequency_range=tuple(args.freq_range) if args.freq_range else None,
+            frequency_range=tuple(
+                args.freq_range) if args.freq_range else None,
         )
 
         if args.verbose:
