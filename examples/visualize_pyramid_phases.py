@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 
+frame_index = 50
 # Add the src directory to the path so we can import angstrom
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
@@ -25,7 +26,7 @@ def main():
     print("=== Pyramid Phase Visualization Demo ===\n")
 
     # Check if test video exists
-    test_video_path = "src/angstrom/data/testvideos/vibration_test.mp4"
+    test_video_path = "src/angstrom/data/testvideos/pulse_test.mp4"
     if not os.path.exists(test_video_path):
         print(f"Test video not found: {test_video_path}")
         print("Please ensure you have a test video file.")
@@ -76,7 +77,7 @@ def main():
     print("   Creating pyramid structure visualization...")
     visualize_pyramid_structure(
         phase_coeffs_list,
-        frame_idx=0,
+        frame_idx=frame_index,
         save_path=os.path.join(output_dir, "pyramid_structure.png")
     )
 
@@ -84,7 +85,7 @@ def main():
     print("   Creating phase visualization for first frame...")
     visualize_pyramid_phases(
         phase_coeffs_list,
-        frame_idx=0,
+        frame_idx=frame_index,
         max_levels=3,
         max_bands=4,
         save_path=os.path.join(output_dir, "pyramid_phases_frame0.png")
@@ -144,7 +145,7 @@ def main():
             visualize_phase_comparison(
                 phase_coeffs_list,
                 amplified_phase_coeffs_list,
-                frame_idx=0,
+                frame_idx=frame_index,
                 level_idx=level_idx,
                 band_idx=band_idx,
                 save_path=os.path.join(output_dir, "phase_comparison.png")
